@@ -181,7 +181,7 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
       {confirm ? (
         <div className="confirm-box" role="group" aria-label="Confirm action">
           <p className="confirm-title">{confirm === 'cancel' ? 'Cancel this reservation?' : confirm === 'noshow' ? 'Record a no-show?' : 'Check out the aircraft now?'}</p>
-          <p className="fine">{confirm === 'cancel' ? 'The record is kept as Canceled and the time opens for others right away.' : confirm === 'noshow' ? 'This marks the reservation as No-show. It is recorded in activity history.' : 'You confirm you are taking the aircraft. Check restrictions and do your normal preflight. PlaneShare does not determine airworthiness.'}</p>
+          <p className="fine">{confirm === 'cancel' ? 'The record is kept as Canceled and the time opens for others right away.' : confirm === 'noshow' ? 'This marks the reservation as No-show. It is recorded in activity history.' : 'You confirm you are taking the aircraft. Check restrictions and do your normal preflight. 733XZ does not determine airworthiness.'}</p>
           {confirm === 'checkout' && <OverdueInspectionsNote />}
           {confirm !== 'checkout' && <Field id="bd-reason" label="Reason (optional)"><input value={reason} onChange={(e) => setReason(e.target.value)} /></Field>}
           {actErr && <Banner tone="danger" title={actErr.message} />}

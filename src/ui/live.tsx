@@ -101,7 +101,7 @@ function SignIn({ error, onSignedIn }: { error?: string; onSignedIn: (me: Me) =>
   return (
     <div className="gate">
       <div className="gate-card">
-        <div className="brand"><span className="brand-mark" aria-hidden="true"><Icon name="plane" size={20} /></span><span><strong>PlaneShare</strong><span className="brand-tail">Members only</span></span></div>
+        <div className="brand"><span className="brand-mark" aria-hidden="true"><Icon name="plane" size={20} /></span><span><strong>733XZ</strong><span className="brand-tail">Members only</span></span></div>
         <h1>Sign in</h1>
         <p className="fine">{mode === 'phone' ? 'Enter your phone number.' : 'Enter the sign-in code the admin sent you.'}</p>
         {err && <Banner tone="danger" title={err} />}

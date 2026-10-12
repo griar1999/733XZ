@@ -118,7 +118,7 @@ export function InstallCard({ force }: { force?: boolean }) {
     <div className="install-card" role="region" aria-label="Install the app">
       <Icon name="phone" />
       <div className="grow">
-        <p><strong>Put PlaneShare on your Home Screen</strong></p>
+        <p><strong>Put 733XZ on your Home Screen</strong></p>
         {deferred
           ? <p className="fine">Opens full screen like a regular app, and you stay signed in.</p>
           : ios
@@ -164,8 +164,8 @@ export function PushToggle({ prompt = false }: { prompt?: boolean }) {
       <div className="grow">
         {st === 'on' && <><p><strong>Notifications are on</strong></p><p className="fine">New bookings, cancellations, changes, groundings, maintenance, your booking reminders and overdue returns.</p></>}
         {st === 'off' && <><p><strong>Get notified on your phone</strong></p><p className="fine">When someone books or cancels, the aircraft is grounded, or your booking is coming up.</p></>}
-        {st === 'needs-install' && <><p><strong>Notifications on iPhone</strong></p><p className="fine">First add PlaneShare to your Home Screen (Share → Add to Home Screen). Open it from the icon, then turn notifications on here.</p></>}
-        {st === 'blocked' && <><p><strong>Notifications are blocked</strong></p><p className="fine">Allow notifications for PlaneShare in your phone or browser settings, then come back.</p></>}
+        {st === 'needs-install' && <><p><strong>Notifications on iPhone</strong></p><p className="fine">First add 733XZ to your Home Screen (Share → Add to Home Screen). Open it from the icon, then turn notifications on here.</p></>}
+        {st === 'blocked' && <><p><strong>Notifications are blocked</strong></p><p className="fine">Allow notifications for 733XZ in your phone or browser settings, then come back.</p></>}
         {st === 'unsupported' && <><p><strong>No notifications in this browser</strong></p><p className="fine">Use Safari on iPhone (from the Home Screen icon) or Chrome.</p></>}
         <div className="btn-row">
           {st === 'off' && <Button variant="primary" pending={busy} onClick={turnOn}>Turn on</Button>}

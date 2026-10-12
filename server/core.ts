@@ -41,7 +41,7 @@ export interface Ctx { request: Request; env: Env; params?: Record<string, strin
 export function handle(fn: (ctx: Ctx) => Promise<Response>) {
   return async (ctx: Ctx) => {
     try {
-      if (!ctx.env.DB) return json({ error: 'The PlaneShare database is not connected yet. The admin needs to finish setup in Cloudflare.' }, 503);
+      if (!ctx.env.DB) return json({ error: 'The 733XZ database is not connected yet. The admin needs to finish setup in Cloudflare.' }, 503);
       sameOrigin(ctx.request);
       await ensureSchema(ctx.env.DB);
       return await fn(ctx);

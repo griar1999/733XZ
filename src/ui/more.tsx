@@ -297,12 +297,12 @@ function Install() {
   return (
     <>
       {__LIVE__ && <InstallCard force />}
-      {!live && <Banner tone="info" title="Installing needs the hosted app">The Claude preview runs inside a sandbox, so phones cannot install it from here. Once PlaneShare is deployed to its own web address, these steps put it on the Home Screen with its own icon.</Banner>}
+      {!live && <Banner tone="info" title="Installing needs the hosted app">The Claude preview runs inside a sandbox, so phones cannot install it from here. Once 733XZ is deployed to its own web address, these steps put it on the Home Screen with its own icon.</Banner>}
       <Section title="iPhone or iPad (Safari)">
-        <ol className="howto"><li>Open the PlaneShare link in Safari.</li><li>Tap the Share button.</li><li>Choose <strong>Add to Home Screen</strong>.</li><li>Keep the name and tap <strong>Add</strong>.</li></ol>
+        <ol className="howto"><li>Open the 733XZ link in Safari.</li><li>Tap the Share button.</li><li>Choose <strong>Add to Home Screen</strong>.</li><li>Keep the name and tap <strong>Add</strong>.</li></ol>
       </Section>
       <Section title="Android (Chrome)">
-        <ol className="howto"><li>Open the PlaneShare link in Chrome.</li><li>Tap the ⋮ menu.</li><li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li><li>Confirm.</li></ol>
+        <ol className="howto"><li>Open the 733XZ link in Chrome.</li><li>Tap the ⋮ menu.</li><li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li><li>Confirm.</li></ol>
       </Section>
       <Section title="What works offline">
         <p>The installed app can show the last data it downloaded, clearly marked as cached. Booking, check-out, return and flight records need a connection so nobody acts on stale availability.</p>

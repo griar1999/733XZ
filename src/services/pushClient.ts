@@ -25,7 +25,7 @@ export async function pushState(): Promise<PushState> {
 
 export async function enablePush(): Promise<void> {
   const perm = await Notification.requestPermission();
-  if (perm !== 'granted') throw new Error(perm === 'denied' ? 'Notifications are blocked for this site. Turn them on in your phone settings for PlaneShare.' : 'Notifications were not turned on.');
+  if (perm !== 'granted') throw new Error(perm === 'denied' ? 'Notifications are blocked for this site. Turn them on in your phone settings for 733XZ.' : 'Notifications were not turned on.');
   const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register('/sw.js'));
   await navigator.serviceWorker.ready;
   const { key } = await fetch('/api/push/key', { credentials: 'same-origin' }).then((r) => r.json());

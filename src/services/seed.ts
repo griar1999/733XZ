@@ -83,7 +83,7 @@ export function seedState(nowMs: number, tz = 'America/Los_Angeles'): DbState {
     ],
     flights,
     settings: {
-      appName: 'PlaneShare', tailNumber: 'N482PS', model: 'Cessna 172S Skyhawk', homeAirport: 'KBFL',
+      appName: '733XZ', tailNumber: 'N482PS', model: 'Cessna 172S Skyhawk', homeAirport: 'KBFL',
       timeZone: tz, bufferMinutes: 0, hobbsEnabled: true, tachEnabled: true, earlyCheckoutMinutes: 60,
       rateCentsPerHour: 5000, rateBasis: 'hobbs', fuelPolicy: 'pilot_pays_at_pump', topOffRequired: true,
     },
@@ -111,11 +111,11 @@ export function seedLive(nowMs: number, ownerName = 'G'): DbState {
     members: [{ id: OWNER_ID, name: nm, initials: nm.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase(), role: 'admin', active: true, email: '' }],
     bookings: [], maintenance: [], issues: [], restrictions: [], flights: [],
     settings: {
-      appName: 'PlaneShare', tailNumber: 'N733XZ', model: '', homeAirport: '',
+      appName: '733XZ', tailNumber: 'N733XZ', model: '', homeAirport: '',
       timeZone: 'America/Los_Angeles', bufferMinutes: 0, hobbsEnabled: true, tachEnabled: true, earlyCheckoutMinutes: 60,
       rateCentsPerHour: 5000, rateBasis: 'hobbs', fuelPolicy: 'pilot_pays_at_pump', topOffRequired: true,
     },
-    audit: [{ id: 'a_start', at, actorId: OWNER_ID, action: 'app.create', entityType: 'settings', summary: 'PlaneShare set up' }],
+    audit: [{ id: 'a_start', at, actorId: OWNER_ID, action: 'app.create', entityType: 'settings', summary: '733XZ set up' }],
     inspections: defaultInspections(),
     savedAt: at,
   };

@@ -9,7 +9,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
   let sent = 0;
   for (const sub of rows.results ?? []) {
     try {
-      if (await sendPush(sub, v, { title: 'PlaneShare', body: "Notifications are on. You'll hear about bookings, cancellations and groundings here.", url: '/' })) sent++;
+      if (await sendPush(sub, v, { title: '733XZ', body: "Notifications are on. You'll hear about bookings, cancellations and groundings here.", url: '/' })) sent++;
       else await env.DB!.prepare('DELETE FROM push_subs WHERE endpoint = ?').bind(sub.endpoint).run();
     } catch (e) { console.log('push test', (e as Error).message); }
   }

@@ -19,9 +19,14 @@ export function defaultInspections(): Inspection[] {
   return DEFAULT_INSPECTIONS.map((d) => ({ ...d, active: true, builtIn: true, lastDate: null, lastTach: null, history: [], notified: null }));
 }
 
-/** Older saved data has no inspections yet: add the standard list. */
+/**
+ * Bring older saved data up to date: add the standard inspection list, and
+ * rename the app from its old temporary name "PlaneShare" to "733XZ".
+ */
 export function ensureInspections<T extends { inspections?: Inspection[] }>(s: T): T & { inspections: Inspection[] } {
   if (!Array.isArray(s.inspections)) (s as { inspections?: Inspection[] }).inspections = defaultInspections();
+  const st = (s as { settings?: { appName?: string } }).settings;
+  if (st && st.appName === 'PlaneShare') st.appName = '733XZ';
   return s as T & { inspections: Inspection[] };
 }
 

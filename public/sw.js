@@ -1,7 +1,7 @@
 // Network-first service worker: always try the latest version, fall back to the cached copy offline.
 // Schedule data and sign-in (/api/) always go straight to the server and are never cached here;
 // the app keeps its own clearly-labeled read-only copy for offline viewing.
-const CACHE = 'planeshare-v3';
+const CACHE = 'planeshare-v4';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon-192.png'])).then(() => self.skipWaiting()));
 });
@@ -21,7 +21,7 @@ self.addEventListener('fetch', (e) => {
 
 // Phone notifications: show the message, and open the right screen when it's tapped.
 self.addEventListener('push', (e) => {
-  let msg = { title: 'PlaneShare', body: 'Something changed on the schedule.', url: '/' };
+  let msg = { title: '733XZ', body: 'Something changed on the schedule.', url: '/' };
   try { msg = { ...msg, ...e.data.json() }; } catch { /* plain or empty message */ }
   e.waitUntil(self.registration.showNotification(msg.title, {
     body: msg.body, icon: '/icon-192.png', badge: '/icon-192.png', tag: msg.tag, data: { url: msg.url },

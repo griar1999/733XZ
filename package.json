@@ -1,7 +1,7 @@
 {
   "name": "planeshare-733xz",
   "version": "1.0.0",
-  "description": "PlaneShare: scheduling, check-out, flight hours and maintenance for N733XZ",
+  "description": "733XZ: scheduling, check-out, flight hours and maintenance for N733XZ",
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc -p .",

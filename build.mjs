@@ -21,7 +21,7 @@ if (target === 'preview') {
   };
   const out = await build({ ...common, entryPoints: ['src/main.tsx'], plugins: [globals], define: { 'process.env.NODE_ENV': '"production"', __LIVE__: 'false', __BUILD__: JSON.stringify(BUILD) } });
   mkdirSync('dist-preview', { recursive: true });
-  writeFileSync('dist-preview/PlaneShare.html', `<title>PlaneShare</title>
+  writeFileSync('dist-preview/PlaneShare.html', `<title>733XZ</title>
 <meta name="theme-color" content="#FFFFFF">
 ${fonts}
 <style>${css}</style>
@@ -41,12 +41,12 @@ ${fonts}
   writeFileSync('dist-live/index.html', `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<title>PlaneShare</title>
+<title>733XZ</title>
 <meta name="theme-color" content="#FFFFFF">
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="PlaneShare">
+<meta name="apple-mobile-web-app-title" content="733XZ">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="/manifest.webmanifest">

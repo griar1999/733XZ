@@ -17,7 +17,7 @@ To turn that off temporarily (for example if the domain stops working), add a Te
 
 ## Phone notifications
 Nothing to set up. The server makes its own push keys the first time someone turns notifications on.
-Members turn them on from Home (or More → Your account). On iPhone, PlaneShare must be added to the Home Screen first.
+Members turn them on from Home (or More → Your account). On iPhone, 733XZ must be added to the Home Screen first.
 - Everyone (except whoever made the change): new bookings, changes, cancellations, groundings, cautions, maintenance.
 - Admins: minor issues, flight records flagged for review, returns without a fuel top-off.
 - Just you: your booking starts within 2 hours, your return is 15 minutes overdue, maintenance overlaps your booking, a no-show recorded for you.

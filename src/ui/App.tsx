@@ -40,7 +40,7 @@ export function App() {
       </div>}
 
       <aside className="sidebar" aria-label="Main">
-        <div className="brand"><span className="brand-mark" aria-hidden="true"><Icon name="plane" size={20} /></span><span><strong>{db.settings.appName}</strong><span className="brand-tail">{db.settings.tailNumber}</span></span></div>
+        <div className="brand"><span className="brand-mark" aria-hidden="true"><Icon name="plane" size={20} /></span><span><strong>{db.settings.appName}</strong>{!db.settings.tailNumber.toUpperCase().includes(db.settings.appName.toUpperCase()) && <span className="brand-tail">{db.settings.tailNumber}</span>}</span></div>
         <nav>{NAV.map((n) => <button key={n.id} className={tab === n.id ? 'on' : ''} aria-current={tab === n.id ? 'page' : undefined} onClick={() => setTab(n.id)}><Icon name={n.icon} /><span>{n.label}</span></button>)}</nav>
         <p className="side-foot fine">Signed in as <strong>{me.name}</strong><br />{me.role === 'admin' ? 'Admin + pilot' : 'Pilot'}</p>
       </aside>
@@ -49,7 +49,7 @@ export function App() {
         <header className="topbar">
           <span className="brand-mark" aria-hidden="true"><Icon name="plane" size={18} /></span>
           <strong>{db.settings.appName}</strong>
-          <span className="brand-tail">{db.settings.tailNumber}</span>
+          {!db.settings.tailNumber.toUpperCase().includes(db.settings.appName.toUpperCase()) && <span className="brand-tail">{db.settings.tailNumber}</span>}
         </header>
         {offline && (
           <div className="offline-bar" role="status">

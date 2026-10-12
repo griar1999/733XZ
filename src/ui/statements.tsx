@@ -36,7 +36,7 @@ export function StatementsScreen() {
 
       <div className="print-head">
         <h2>{s.tailNumber} usage statement · {monthLabel(month)}</h2>
-        <p className="fine">Rental {fmtMoney(s.rateCentsPerHour)} per {basis} hour. Fuel: {fuelOnStatement ? 'added to the statement' : 'paid by the pilot at the pump (shown, not owed)'}. Statement only — no payments are processed in PlaneShare.</p>
+        <p className="fine">Rental {fmtMoney(s.rateCentsPerHour)} per {basis} hour. Fuel: {fuelOnStatement ? 'added to the statement' : 'paid by the pilot at the pump (shown, not owed)'}. Statement only — no payments are processed in 733XZ.</p>
       </div>
 
       {rows.length === 0 ? (

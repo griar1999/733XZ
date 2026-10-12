@@ -213,5 +213,5 @@ export function OverdueInspectionsNote() {
   const views = useInspectionViews();
   const over = views.filter((v) => v.due.status === 'overdue');
   if (!over.length) return null;
-  return <Banner tone="danger" title={`Overdue: ${over.map((v) => v.insp.name).join(', ')}`}>Check with an admin before flying. PlaneShare doesn't decide airworthiness.</Banner>;
+  return <Banner tone="danger" title={`Overdue: ${over.map((v) => v.insp.name).join(', ')}`}>Check with an admin before flying. 733XZ doesn't decide airworthiness.</Banner>;
 }

@@ -188,7 +188,7 @@ export function MyBookings() {
       {list.length === 0
         ? <Empty title={view === 'upcoming' ? 'No upcoming bookings' : view === 'past' ? 'No past bookings' : 'Nothing canceled'} action={view === 'upcoming' ? <Button variant="primary" onClick={() => openModal({ kind: 'booking' })}>Book aircraft</Button> : undefined} />
         : <div className="stack">{list.map((b) => <BookingCard key={b.id} b={b} showPilot={everyone} />)}</div>}
-      {view === 'past' && list.some((b) => b.status === 'confirmed') && <p className="fine">Past reservations still shown as Confirmed were never checked out. An admin can record them as a no-show; PlaneShare never assumes it.</p>}
+      {view === 'past' && list.some((b) => b.status === 'confirmed') && <p className="fine">Past reservations still shown as Confirmed were never checked out. An admin can record them as a no-show; 733XZ never assumes it.</p>}
     </div>
   );
 }
@@ -241,7 +241,7 @@ export function FlightLog() {
         <div><p className="eyebrow">Rental at {fmtMoney(s.rateCentsPerHour)}/h</p><p className="reading">{fmtMoney(ch.rentalCents)}</p></div>
         <div><p className="eyebrow">Fuel {s.fuelPolicy === 'pilot_pays_at_pump' ? '(paid at pump)' : '(on statement)'}</p><p className="reading">{fmtMoney(ch.fuelCents)}</p></div>
       </div>
-      <p className="fine">Aircraft totals, all records: Hobbs {fmtHundredths(sumMeter(allActive, 'hobbs'))} · Tach {fmtHundredths(sumMeter(allActive, 'tach'))}. Charges are a usage statement only; PlaneShare does not take payments.</p>
+      <p className="fine">Aircraft totals, all records: Hobbs {fmtHundredths(sumMeter(allActive, 'hobbs'))} · Tach {fmtHundredths(sumMeter(allActive, 'tach'))}. Charges are a usage statement only; 733XZ does not take payments.</p>
 
       {rows.length === 0 ? <Empty title="No flight records match">Records appear after a pilot returns the aircraft and enters Hobbs and tach readings.</Empty> : (
         <div className="table-wrap">

@@ -15,7 +15,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(path, { credentials: 'same-origin', ...init, headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) } });
   } catch {
-    throw new ApiError('offline', "Can't reach the PlaneShare server. Check your connection and try again. Nothing was saved.");
+    throw new ApiError('offline', "Can't reach the 733XZ server. Check your connection and try again. Nothing was saved.");
   }
   const data = (await res.json().catch(() => ({}))) as T & { error?: string; code?: ApiErrorCode; details?: ApiErrorDetails };
   if (!res.ok) {
