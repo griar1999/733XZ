@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from './context';
-import { Avatar, Banner, Button, Empty, GatedButton, Icon, Pill, Section, Segmented, StatusPill, PlaneIcon } from './components';
+import { Avatar, Banner, Button, Empty, GatedButton, Icon, Pill, Section, Segmented, StatusPill } from './components';
 import { activeRestrictions, aircraftOut, charges, checkOutBlocker, isOverdue, lastReadings, overlaps, sumMeter } from '../domain/rules';
 import { fmtDateTime, fmtRange, fmtTime, toLocalParts, addDays } from '../domain/time';
 import { fmtHundredths, fmtMoney } from '../domain/decimal';
@@ -17,7 +17,7 @@ export function AircraftHero({ compact }: { compact?: boolean }) {
     <div className={`aircraft ${compact ? 'compact' : ''}`}>
       {s.photoDataUrl
         ? <img src={s.photoDataUrl} alt={`${s.tailNumber} ${s.model}`} className="aircraft-photo" />
-        : <div className="aircraft-photo placeholder" aria-hidden="true"><PlaneIcon size={84} /></div>}
+        : <div className="aircraft-photo placeholder" aria-hidden="true"><Icon name="plane" size={34} /></div>}
       <div>
         <p className="tail">{s.tailNumber}</p>
         <p className="model">{s.model || 'Aircraft model not set'}</p>
@@ -95,8 +95,15 @@ export function Home() {
           <div className={`status-tile tone-${grounded || inspOver.length ? 'danger' : restrictions.length ? 'warn' : 'neutral'}`}>
             <p className="eyebrow">Operational restrictions</p>
             <p className="status-label">{grounded ? 'Grounded' : restrictions.length ? `${restrictions.length} caution${restrictions.length > 1 ? 's' : ''}` : 'None recorded'}</p>
-            <p className="status-detail">{grounded ? 'Check-out is blocked until an admin clears it.' : 'Recorded restrictions only. The pilot in command determines airworthiness.'}</p>
-            {inspOver.length > 0 && <p className="status-detail insp-over-line"><strong>{inspOver.length} inspection{inspOver.length > 1 ? 's' : ''} overdue</strong></p>}
+            {restrictions.length > 0 && (
+              <ul className="restrict-list">
+                {restrictions.slice().sort((a, b) => (a.level === 'grounded' ? 0 : 1) - (b.level === 'grounded' ? 0 : 1)).map((r) => (
+                  <li key={r.id} className={r.level}><strong>{r.reason}</strong></li>
+                ))}
+              </ul>
+            )}
+            {inspOver.length > 0 && <p className="status-detail insp-over-line"><strong>Overdue: {inspOver.map((v) => v.insp.name).join(', ')}</strong></p>}
+            <p className="status-detail">{grounded ? 'Check-out is blocked until an admin clears it.' : restrictions.length || inspOver.length ? 'The pilot in command determines airworthiness.' : 'Recorded restrictions only. The pilot in command determines airworthiness.'}</p>
           </div>
         </div>
       </div>
