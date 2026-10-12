@@ -17,14 +17,18 @@ export function useInspectionViews(): InspectionView[] {
 
 /** Compact list for Home: anything overdue, due soon, or not set yet. */
 export function InspectionsSummary() {
-  const { setTab, setMore } = useApp();
+  const { setTab, setMore, me } = useApp();
+  const isAdmin = me.role === 'admin';
   const views = useInspectionViews();
   const attention = views.filter((v) => v.due.status === 'overdue' || v.due.status === 'soon');
   const unset = views.filter((v) => v.due.status === 'unset').length;
   const open = () => { setTab('more'); setMore('inspections'); };
+  // Pilots don't see setup prompts; with nothing entered yet there's nothing useful to show them.
+  if (!isAdmin && attention.length === 0 && unset === views.length) return null;
   return (
     <Section title="Inspections" action={<button className="link" onClick={open}>All inspections</button>}>
       {attention.length === 0 && unset === 0 && <p className="insp-allgood"><Icon name="check" size={18} /> All inspections current.</p>}
+      {attention.length === 0 && unset > 0 && !isAdmin && <p className="insp-allgood"><Icon name="check" size={18} /> Nothing due soon.</p>}
       {attention.length > 0 && (
         <ul className="list">
           {attention.map(({ insp, due }) => (
@@ -35,7 +39,7 @@ export function InspectionsSummary() {
           ))}
         </ul>
       )}
-      {unset > 0 && <p className="fine">{unset} inspection{unset > 1 ? 's' : ''} not set up yet. <button className="link" onClick={open}>Enter last dates</button></p>}
+      {unset > 0 && isAdmin && <p className="fine">{unset} inspection{unset > 1 ? 's' : ''} not set up yet. <button className="link" onClick={open}>Enter last dates</button></p>}
     </Section>
   );
 }
