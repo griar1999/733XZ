@@ -140,7 +140,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ---------- home ---------- */
 .home-top { display: grid; gap: 14px; }
 .aircraft { display: flex; gap: 14px; align-items: center; }
-.aircraft-photo { width: 104px; height: 78px; border-radius: 10px; object-fit: cover; flex: none; background: var(--surface-2); }
+.aircraft-photo { width: 92px; height: 66px; border-radius: 10px; object-fit: cover; flex: none; background: var(--surface-2); }
 .aircraft-photo.placeholder { display: grid; place-items: center; color: var(--muted); border: 1px solid var(--line); }
 .tail { font-family: var(--f-mono); font-size: 1.7rem; font-weight: 600; letter-spacing: .04em; line-height: 1.1; }
 .model { font-weight: 600; }
@@ -156,7 +156,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .status-detail { font-size: .86rem; color: var(--muted); }
 .actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .actions .gated .btn { width: 100%; }
-.home-grid { display: grid; gap: 22px; }
+.actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.actions-row .btn { width: 100%; }
+.up-row { border-left: 4px solid var(--line); }
+.up-row.mine { border-left-color: var(--accent); }
+.up-who { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; text-align: right; }
+.more-line { margin-top: 8px; font-size: .92rem; }
+.home-grid { display: grid; gap: 18px; }
+.home { gap: 14px; }
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .li-restrict { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); }
 .li-restrict.grounded { background: var(--danger-bg); }
@@ -166,7 +173,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .mx-line { display: flex; gap: 8px; align-items: center; font-size: .9rem; color: var(--muted); }
 .meters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .meter-tile { padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); display: flex; flex-direction: column; gap: 2px; }
-@media (min-width: 640px) { .actions { grid-template-columns: repeat(3, 1fr); align-items: start; } }
+
 @media (min-width: 1000px) {
   .home-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: center; }
   .home-grid { grid-template-columns: 1fr 1fr; }

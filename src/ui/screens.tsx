@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { useApp } from './context';
 import { Avatar, Banner, Button, Empty, GatedButton, Icon, Pill, Section, Segmented, StatusPill } from './components';
 import { activeRestrictions, aircraftOut, charges, checkOutBlocker, isOverdue, lastReadings, overlaps, sumMeter } from '../domain/rules';
-import { fmtDateTime, fmtRange, fmtTime, toLocalParts, addDays } from '../domain/time';
+import { fmtDateTime, fmtRange, fmtTime, toLocalParts, addDays, fmtDate } from '../domain/time';
 import { fmtHundredths, fmtMoney } from '../domain/decimal';
 import type { Booking, FlightRecord } from '../domain/types';
 import { pilotName } from './bookingViews';
@@ -55,7 +55,7 @@ export function Home() {
   const upcoming = db.bookings.filter((b) => (b.status === 'confirmed' || b.status === 'checked_out') && Date.parse(b.endUtc) > now).sort((a, b) => Date.parse(a.startUtc) - Date.parse(b.startUtc));
   const current = upcoming.find((b) => Date.parse(b.startUtc) <= now && b.status === 'confirmed');
   const nextAny = upcoming.find((b) => Date.parse(b.startUtc) > now);
-  const myNext = upcoming.find((b) => b.pilotId === me.id);
+  const soon = upcoming.slice(0, 3);
   const restrictions = activeRestrictions(db);
   const inspOver = useInspectionViews().filter((v) => v.due.status === 'overdue');
   const grounded = restrictions.some((r) => r.level === 'grounded');
@@ -81,7 +81,7 @@ export function Home() {
   if (out && overdue) sched = { tone: 'danger', label: 'Overdue return', detail: `Checked out by ${pilotName(db, out.pilotId)}. Was due back ${fmtDateTime(out.endUtc, tz)}.` };
   else if (out) sched = { tone: 'info', label: 'Checked out', detail: `${pilotName(db, out.pilotId)} until ${fmtTime(out.endUtc, tz)}.` };
   else if (current) sched = { tone: 'info', label: 'Reserved now', detail: `${pilotName(db, current.pilotId)} until ${fmtTime(current.endUtc, tz)} (not yet checked out).` };
-  else sched = { tone: 'ok', label: 'Not reserved right now', detail: nextAny ? `Next reservation ${fmtDateTime(nextAny.startUtc, tz)}.` : 'No upcoming reservations.' };
+  else sched = { tone: 'ok', label: 'Not reserved right now', detail: nextAny ? `Next: ${fmtDate(nextAny.startUtc, tz)}, ${fmtTime(nextAny.startUtc, tz)}` : 'No upcoming reservations.' };
 
   return (
     <div className="screen home">
@@ -117,9 +117,12 @@ export function Home() {
       {overdue && out && <Banner tone="danger" title="Aircraft overdue">{pilotName(db, out.pilotId)}'s reservation ended {fmtDateTime(out.endUtc, tz)}. It stays checked out until returned. <button className="link" onClick={() => openModal({ kind: 'bookingDetail', bookingId: out.id })}>Open reservation</button></Banner>}
 
       <div className="actions">
-        <Button variant="primary" size="lg" icon="plus" onClick={() => openModal({ kind: 'booking' })} disabled={false}>Book aircraft</Button>
-        <GatedButton variant={myOut ? 'primary' : 'secondary'} size="lg" icon="key" reason={coReason} onClick={coAction}>{coLabel}</GatedButton>
-        <Button size="lg" icon="alert" onClick={() => openModal({ kind: 'issue' })}>Report issue</Button>
+        {myOut && <Button variant="primary" size="lg" icon="key" onClick={coAction}>Return aircraft</Button>}
+        {!myOut && myEligible && Date.parse(myEligible.startUtc) - now < 12 * 3600e3 && <GatedButton variant="primary" size="lg" icon="key" reason={coReason} onClick={coAction}>Check out</GatedButton>}
+        <div className="actions-row">
+          <Button variant={myOut ? 'secondary' : 'primary'} size="lg" icon="plus" onClick={() => openModal({ kind: 'booking' })}>Book</Button>
+          <Button size="lg" icon="alert" onClick={() => openModal({ kind: 'issue' })}>Report issue</Button>
+        </div>
       </div>
 
       {recordsNeeded.length > 0 && (
@@ -135,40 +138,41 @@ export function Home() {
       )}
 
       <div className="home-grid">
-        <Section title="My next booking">
-          {myNext ? <BookingCard b={myNext} showPilot={false} /> : <Empty title="Nothing booked" action={<Button onClick={() => openModal({ kind: 'booking' })}>Book aircraft</Button>}>You have no upcoming reservations.</Empty>}
-        </Section>
-        <Section title="Next reservation" action={<button className="link" onClick={() => setTab('calendar')}>Calendar</button>}>
-          {nextAny ? <BookingCard b={nextAny} /> : <Empty title="No upcoming reservations" />}
-        </Section>
+        {soon.length > 0 && (
+          <Section title="Coming up" action={<button className="link" onClick={() => setTab('calendar')}>Calendar</button>}>
+            <ul className="list">{soon.map((b) => (
+              <li key={b.id}><button className={`row-btn up-row ${b.pilotId === me.id ? 'mine' : ''}`} onClick={() => openModal({ kind: 'bookingDetail', bookingId: b.id })}>
+                <span><strong>{fmtDate(b.startUtc, tz)}</strong><span className="fine block">{fmtTime(b.startUtc, tz)} – {fmtTime(b.endUtc, tz)}</span></span>
+                <span className="up-who">{b.pilotId === me.id ? 'You' : pilotName(db, b.pilotId).split(' ')[0]}{b.destination ? ` → ${b.destination}` : ''}{b.status === 'checked_out' && <Pill tone="info">Out</Pill>}</span>
+              </button></li>))}
+            </ul>
+            {upcoming.length > soon.length && <button className="link more-line" onClick={() => setTab('calendar')}>{upcoming.length - soon.length} more on the calendar</button>}
+          </Section>
+        )}
 
-        <Section title="Restrictions and issues" action={<button className="link" onClick={() => { setTab('more'); setMore('aircraft'); }}>Aircraft status</button>}>
-          {restrictions.length === 0 && openIssues.length === 0 && <Empty title="No open items">No restrictions or open issues are recorded.</Empty>}
-          <ul className="list">
-            {restrictions.map((r) => (
-              <li key={r.id} className={`li-restrict ${r.level}`}>
-                <Pill tone={r.level === 'grounded' ? 'danger' : 'warn'}>{r.level === 'grounded' ? 'Grounded' : 'Caution'}</Pill>
-                <span>{r.reason}</span>
-              </li>
-            ))}
-            {openIssues.map((i) => (
-              <li key={i.id}><button className="row-btn" onClick={() => openModal({ kind: 'issueDetail', issueId: i.id })}>
-                <span>{i.title}</span><span className="pills"><Pill tone={urgencyTone(i.urgency)}>{i.urgency}</Pill><Pill tone="muted">{issueStatusLabel(i.status)}</Pill></span>
-              </button></li>
-            ))}
-          </ul>
-          {mxUpcoming[0] && <p className="mx-line"><Icon name="wrench" size={18} /> Maintenance {fmtRange(mxUpcoming[0].startUtc, mxUpcoming[0].endUtc, tz)}: {mxUpcoming[0].title}</p>}
-        </Section>
+        {(openIssues.length > 0 || mxUpcoming[0]) && (
+          <Section title="Issues and maintenance" action={<button className="link" onClick={() => { setTab('more'); setMore('aircraft'); }}>Aircraft status</button>}>
+            <ul className="list">
+              {openIssues.map((i) => (
+                <li key={i.id}><button className="row-btn" onClick={() => openModal({ kind: 'issueDetail', issueId: i.id })}>
+                  <span>{i.title}</span><span className="pills"><Pill tone={urgencyTone(i.urgency)}>{i.urgency}</Pill><Pill tone="muted">{issueStatusLabel(i.status)}</Pill></span>
+                </button></li>
+              ))}
+            </ul>
+            {mxUpcoming[0] && <p className="mx-line"><Icon name="wrench" size={18} /> Maintenance {fmtRange(mxUpcoming[0].startUtc, mxUpcoming[0].endUtc, tz)}: {mxUpcoming[0].title}</p>}
+          </Section>
+        )}
 
         <InspectionsSummary />
 
-        <Section title="Meter readings">
-          <div className="meters">
-            {db.settings.hobbsEnabled && <div className="meter-tile"><p className="eyebrow">Hobbs · last recorded</p><p className="reading">{fmtHundredths(last.hobbs)}</p><p className="fine">+{fmtHundredths(sumMeter(recent, 'hobbs'))} in last 30 days</p></div>}
-            {db.settings.tachEnabled && <div className="meter-tile"><p className="eyebrow">Tach · last recorded</p><p className="reading">{fmtHundredths(last.tach)}</p><p className="fine">+{fmtHundredths(sumMeter(recent, 'tach'))} in last 30 days</p></div>}
-          </div>
-          <p className="fine">Hobbs and tach measure different things and are tracked separately. Neither is your logbook flight time.</p>
-        </Section>
+        {(last.hobbs !== null || last.tach !== null) && (
+          <Section title="Meters">
+            <div className="meters">
+              {db.settings.hobbsEnabled && <div className="meter-tile"><p className="eyebrow">Hobbs</p><p className="reading">{fmtHundredths(last.hobbs)}</p><p className="fine">+{fmtHundredths(sumMeter(recent, 'hobbs'))} last 30 days</p></div>}
+              {db.settings.tachEnabled && <div className="meter-tile"><p className="eyebrow">Tach</p><p className="reading">{fmtHundredths(last.tach)}</p><p className="fine">+{fmtHundredths(sumMeter(recent, 'tach'))} last 30 days</p></div>}
+            </div>
+          </Section>
+        )}
       </div>
     </div>
   );
