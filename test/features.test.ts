@@ -263,3 +263,27 @@ describe('Note to pilots', () => {
     await expect(api.restrictionToNote('m2', c2)).rejects.toThrow(/admin/);
   });
 });
+
+import { nNumberToIcao, icaoFor } from '../src/domain/icao';
+import { trackStats, fromOpenSky, downsample } from '../src/domain/track';
+describe('Flight paths', () => {
+  it('works out the transponder code from the tail number', () => {
+    expect(nNumberToIcao('N733XZ')).toBe('a9d855'); // FAA registry
+    expect(nNumberToIcao('N1')).toBe('a00001');
+    expect(nNumberToIcao('N99999')).toBe('adf7c7');
+    expect(nNumberToIcao('N1A')).toBe('a00002');
+    expect(nNumberToIcao('NBAD')).toBeNull();
+    expect(icaoFor({ tailNumber: 'N733XZ' })).toBe('a9d855');
+    expect(icaoFor({ tailNumber: 'N733XZ', icao24: 'ABC123' })).toBe('abc123');
+  });
+  it('converts OpenSky waypoints and measures the flight', () => {
+    const pts = fromOpenSky([[1000, 35.43, -119.05, 150, 0, true], [1600, 35.6, -119.05, 1500, 0, false], [2200, 35.43, -119.05, null, 0, false], ['x']]);
+    expect(pts).toHaveLength(3);
+    expect(pts[1][3]).toBe(4921);
+    const st = trackStats(pts);
+    expect(st.minutes).toBe(20);
+    expect(st.maxAlt).toBe(4921);
+    expect(st.nm).toBeGreaterThan(20); expect(st.nm).toBeLessThan(21);
+    expect(downsample(Array.from({ length: 2000 }, (_, i) => [i, 0, 0, 0] as [number, number, number, number]), 100)).toHaveLength(100);
+  });
+});

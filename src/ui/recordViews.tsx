@@ -1,3 +1,4 @@
+import { FlightPath } from './flightPath';
 import React, { useMemo, useRef, useState } from 'react';
 import { useApp, useAction } from './context';
 import { Banner, Button, Field, GatedButton, Icon, Modal, Pill } from './components';
@@ -188,6 +189,7 @@ export function FlightDetail({ flightId }: { flightId: string }) {
         <dt>Recorded</dt><dd>{fmtDateTime(f.createdAt, tz)} by {pilotName(db, f.createdBy)}</dd>
         {f.notes && <><dt>Notes</dt><dd>{f.notes}</dd></>}
       </dl>
+      {!f.voided && <FlightPath flightId={f.id} />}
       {f.flags.length > 0 && <Banner tone="warn" title="Review flags">{f.flags.map((x) => <p key={x}>{x}</p>)}</Banner>}
       {f.revisions.length > 0 && (
         <div className="subcard"><h3>Corrections</h3>

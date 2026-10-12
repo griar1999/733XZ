@@ -144,6 +144,8 @@ export interface AircraftSettings {
   topOffRequired: boolean;
   /** Standing requirements shown to every pilot on Home, one per line (e.g. "Only authorized pilots may fly 733XZ"). */
   pilotNotes?: string;
+  /** ADS-B transponder code (6 hex digits) used to find flight paths. Blank = work it out from the tail number. */
+  icao24?: string;
 }
 
 export interface AuditEntry {

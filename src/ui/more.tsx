@@ -1,3 +1,4 @@
+import { nNumberToIcao } from '../domain/icao';
 import React, { useState } from 'react';
 import { useApp, useAction } from './context';
 import { Avatar, Banner, Button, Empty, Field, GatedButton, Icon, Modal, Pill, Section } from './components';
@@ -220,6 +221,9 @@ function Settings() {
             <Field id="st-apt" label="Home airport" error={fe.homeAirport}><input className="mono" value={s.homeAirport} onChange={(e) => set('homeAirport', e.target.value)} /></Field>
           </div>
           <Field id="st-model" label="Aircraft model" error={fe.model}><input value={s.model} onChange={(e) => set('model', e.target.value)} /></Field>
+          <Field id="st-icao" label="ADS-B transponder code (for flight paths)" error={fe.icao24} hint={`Leave blank to use the code for ${s.tailNumber || 'the tail number'}${nNumberToIcao(s.tailNumber) ? ` (${nNumberToIcao(s.tailNumber)!.toUpperCase()})` : ''}. It's the "Mode S Code (Base 16)" on the FAA registry.`}>
+            <input className="mono" value={(s.icao24 ?? '').toUpperCase()} maxLength={6} autoCapitalize="characters" onChange={(e) => set('icao24', e.target.value)} placeholder={nNumberToIcao(s.tailNumber)?.toUpperCase() ?? ''} />
+          </Field>
           <div className="field">
             <label htmlFor="st-photo">Aircraft photo</label>
             <div className="photo-row">

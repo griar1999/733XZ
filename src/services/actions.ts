@@ -326,6 +326,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     for (const k of ['bufferMinutes', 'earlyCheckoutMinutes', 'rateCentsPerHour'] as const) if (k in p) patch[k] = Number(p[k]);
     for (const k of ['hobbsEnabled', 'tachEnabled', 'topOffRequired'] as const) if (k in p) patch[k] = p[k] === true;
     if ('rateBasis' in p) patch.rateBasis = p.rateBasis === 'tach' ? 'tach' : 'hobbs';
+    if ('icao24' in p) patch.icao24 = str(p.icao24, 10).trim().toLowerCase() || undefined;
     if ('pilotNotes' in p) patch.pilotNotes = cleanNotes(str(p.pilotNotes, 2000));
     if ('fuelPolicy' in p) patch.fuelPolicy = p.fuelPolicy === 'add_to_statement' ? 'add_to_statement' : 'pilot_pays_at_pump';
     const next = { ...db.settings, ...patch };
@@ -341,6 +342,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     if (next.rateBasis === 'hobbs' && !next.hobbsEnabled) fe.rateBasis = 'Rental is billed on Hobbs, which is turned off. Switch the rate basis to tach first.';
     if (next.rateBasis === 'tach' && !next.tachEnabled) fe.rateBasis = 'Rental is billed on tach, which is turned off. Switch the rate basis to Hobbs first.';
     if (!Number.isInteger(next.rateCentsPerHour) || next.rateCentsPerHour < 0 || next.rateCentsPerHour > 100000) fe.rate = 'Enter an hourly rate between $0 and $1,000.';
+    if (next.icao24 && !/^[0-9a-f]{6}$/.test(next.icao24)) fe.icao24 = 'Use the 6-character hex code from the FAA registry, like A9D855, or leave it blank.';
     if (next.photoDataUrl && next.photoDataUrl.length > 1_500_000) fe.photo = 'That photo is too large.';
     if (Object.keys(fe).length) throw new ApiError('validation', Object.values(fe)[0], { fieldErrors: fe });
     next.tailNumber = next.tailNumber.trim().toUpperCase();

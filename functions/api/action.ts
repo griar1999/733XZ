@@ -2,6 +2,7 @@ import { runAction } from '../../src/services/actions';
 import { ApiError, STATUS_OF } from '../../src/services/api';
 import { handle, HttpError, json, noticesForChange, readJson, requireSession, runTimedChecks, storePhotos, updateApp, visibleState } from '../../server/core';
 import { pushNotices } from '../../server/push';
+import { deleteTracks, getTrack, type TrackEnv } from '../../server/tracks';
 import type { DbState } from '../../src/domain/types';
 import type { PhoneNotice } from '../../src/domain/notices';
 
@@ -19,7 +20,7 @@ export const onRequestPost = handle(async ({ request, env, waitUntil }) => {
       notices = noticesForChange(state, r.state);
       return r;
     });
-    if (name === 'clearData') await deleteOrphanPhotos(env, out.state);
+    if (name === 'clearData') { await deleteOrphanPhotos(env, out.state); await deleteTracks(env, new Set(out.state.flights.map((f) => f.id))); }
     if (name === 'removeMember') {
       const id = (out.result as { removed: string }).removed;
       await env.DB!.batch([
@@ -33,6 +34,8 @@ export const onRequestPost = handle(async ({ request, env, waitUntil }) => {
     const later = (async () => {
       await pushNotices(env, notices);
       await pushNotices(env, await runTimedChecks(env));
+      // new flight record: first try at its flight path (OpenSky often needs a few hours; the tick retries)
+      if (name === 'submitFlight') { const id = (out.result as { record?: { id: string }; replayed?: boolean } | null)?.record?.id; if (id) await getTrack(env as TrackEnv, id).catch((e) => console.log('track', e)); }
     })().catch((e) => console.log('push', e));
     if (waitUntil) waitUntil(later); else await later;
     return json({ state: visibleState(out.state, s), version: out.version, result: out.result, now: new Date().toISOString() });

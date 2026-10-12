@@ -24,7 +24,7 @@ export function PullToRefresh() {
     const blocked = (t: EventTarget | null) => {
       if (document.querySelector('.modal-backdrop')) return true;
       const el = t as HTMLElement | null;
-      return !!el?.closest?.('.table-wrap, .week-wrap, .segmented, input, textarea, select');
+      return !!el?.closest?.('.table-wrap, .week-wrap, .segmented, .leaflet-container, input, textarea, select');
     };
     const go = () => {
       setRefreshing(true); setPull(THRESHOLD);
