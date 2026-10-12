@@ -395,7 +395,19 @@ html, body { overscroll-behavior-y: none; }
 .print-head { display: flex; flex-direction: column; gap: 4px; }
 .log-table tr.sub-row td { background: var(--surface-2); border-bottom-color: var(--surface); }
 .log-table tfoot td { border-top: 2px solid var(--line); font-weight: 600; }
+/* Phone: app-style layout. The page itself never scrolls (so iPhone can't drag the menu around
+   when it bounces); only the content area scrolls, and the menu is a solid bar underneath it. */
+@media screen and (max-width: 899px) {
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  #root, .shell { height: 100%; }
+  .shell { display: flex; flex-direction: column; }
+  .shell > .demo-bar { position: relative; top: 0; flex: none; }
+  .main { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; padding-bottom: 24px; }
+  .bottom-nav { position: relative; flex: none; }
+}
+
 @media print {
+  html, body, #root, .shell, .main { height: auto !important; overflow: visible !important; }
   .sidebar, .bottom-nav, .topbar, .demo-bar, .no-print, .back-btn, .toasts, .sync-bar, .ptr, .install-card, .offline-bar { display: none !important; }
   .shell { display: block; }
   body, .screen { background: #fff; }

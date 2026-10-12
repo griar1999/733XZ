@@ -3,6 +3,7 @@ import type { DbState, Member, Booking } from '../domain/types';
 import { ApiError, type PlaneShareApi } from '../services/api';
 import type { HttpApi, Me } from '../services/httpApi';
 import { reloadIfNewVersion } from '../services/buildMode';
+import { scrollToTop } from './scroll';
 
 export type Tab = 'home' | 'calendar' | 'bookings' | 'log' | 'more';
 export type MorePage = 'menu' | 'inspections' | 'aircraft' | 'activity' | 'statements' | 'settings' | 'access' | 'install' | 'demo' | 'plan';
@@ -112,8 +113,8 @@ export function AppProvider({ api, liveMe, onSignOut, children }: { api: PlaneSh
     : db.members.find((m) => m.id === meId && m.active) ?? db.members.find((m) => m.active)!;
   useEffect(() => { if (live && !me.active && !fromCache) void onSignOut?.(); }, [live, me.active, fromCache, onSignOut]);
   const setMe = useCallback((id: string) => { if (live) return; setMeId(id); safeSet('planeshare.me', id); setModal(null); }, [live]);
-  const setTab = useCallback((t: Tab) => { setTabState(t); safeSet('planeshare.tab', t); if (t === 'more') setMore('menu'); window.scrollTo?.(0, 0); refresh(); }, [refresh]);
-  const setMoreAndRefresh = useCallback((p: MorePage) => { setMore(p); window.scrollTo?.(0, 0); refresh(); }, [refresh]);
+  const setTab = useCallback((t: Tab) => { setTabState(t); safeSet('planeshare.tab', t); if (t === 'more') setMore('menu'); scrollToTop(); refresh(); }, [refresh]);
+  const setMoreAndRefresh = useCallback((p: MorePage) => { setMore(p); scrollToTop(); refresh(); }, [refresh]);
   const signOut = useCallback(async () => { await onSignOut?.(); }, [onSignOut]);
   const toast = useCallback((text: string, tone: Toast['tone'] = 'success') => {
     const id = ++tid.current;

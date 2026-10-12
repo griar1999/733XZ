@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { isStandalone } from '../services/buildMode';
 import { disablePush, enablePush, pushLikelyOn, pushState, type PushState } from '../services/pushClient';
 import { useApp } from './context';
+import { scrolledBy } from './scroll';
 import { Button, Icon } from './components';
 
 const THRESHOLD = 72; // px of damped pull needed to refresh
@@ -31,7 +32,7 @@ export function PullToRefresh() {
       setTimeout(() => window.location.reload(), 300);
     };
     const onStart = (e: TouchEvent) => {
-      if (refreshing || e.touches.length !== 1 || window.scrollY > 0 || blocked(e.target)) { start.current = null; return; }
+      if (refreshing || e.touches.length !== 1 || scrolledBy() > 0 || blocked(e.target)) { start.current = null; return; }
       start.current = { y: e.touches[0].clientY, x: e.touches[0].clientX };
       active.current = false;
     };
@@ -40,7 +41,7 @@ export function PullToRefresh() {
       const dy = e.touches[0].clientY - start.current.y;
       const dx = Math.abs(e.touches[0].clientX - start.current.x);
       if (!active.current) {
-        if (dy <= 0 || dx > dy || window.scrollY > 0) { start.current = null; return; }
+        if (dy <= 0 || dx > dy || scrolledBy() > 0) { start.current = null; return; }
         active.current = true;
       }
       const damped = Math.min(MAX, dy * 0.5);
@@ -57,7 +58,7 @@ export function PullToRefresh() {
     // Computers: trackpad or wheel scroll up while already at the top does the same thing.
     let wheelTimer: ReturnType<typeof setTimeout> | undefined;
     const onWheel = (e: WheelEvent) => {
-      if (refreshing || e.ctrlKey || window.scrollY > 0 || e.deltaY >= 0 || blocked(e.target)) return;
+      if (refreshing || e.ctrlKey || scrolledBy() > 0 || e.deltaY >= 0 || blocked(e.target)) return;
       const next = Math.min(MAX, pullRef.current + Math.min(40, -e.deltaY) * 0.35);
       pullRef.current = next;
       setPull(next);
