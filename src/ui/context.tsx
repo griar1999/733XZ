@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import type { DbState, Member, Booking } from '../domain/types';
 import { ApiError, type PlaneShareApi } from '../services/api';
 import type { HttpApi, Me } from '../services/httpApi';
+import { reloadIfNewVersion } from '../services/buildMode';
 
 export type Tab = 'home' | 'calendar' | 'bookings' | 'log' | 'more';
 export type MorePage = 'menu' | 'aircraft' | 'activity' | 'settings' | 'access' | 'install' | 'demo' | 'plan';
@@ -29,6 +30,8 @@ interface Ctx {
   refresh: () => void;
   /** live: true when the screen shows this phone's last saved copy */
   fromCache: boolean;
+  /** live: true while fresh data is loading */
+  syncing: boolean;
   signOut: () => Promise<void>;
   db: DbState;
   me: Member;
@@ -70,10 +73,15 @@ export function AppProvider({ api, liveMe, onSignOut, children }: { api: PlaneSh
 
   // ---- live: keep shared data fresh (on return to the app, every minute, and when moving between tabs) ----
   const lastFetch = useRef(Date.now());
+  // Every tab change and return to the app reloads: first checks for a newer version of the site
+  // (and reloads the page if there is one), then pulls the latest shared data.
   const refresh = useCallback(() => {
-    if (!live || Date.now() - lastFetch.current < 5000) return;
+    if (!live || Date.now() - lastFetch.current < 800) return;
     lastFetch.current = Date.now();
-    void (api as HttpApi).refresh().catch(async (e) => { if (e instanceof ApiError && e.code === 'auth') await onSignOut?.(); });
+    void reloadIfNewVersion().then((reloading) => {
+      if (reloading) return;
+      return (api as HttpApi).refresh().catch(async (e) => { if (e instanceof ApiError && e.code === 'auth') await onSignOut?.(); });
+    });
   }, [api, live, onSignOut]);
   useEffect(() => {
     if (!live) return;
@@ -83,6 +91,7 @@ export function AppProvider({ api, liveMe, onSignOut, children }: { api: PlaneSh
     return () => { document.removeEventListener('visibilitychange', onVis); clearInterval(t); };
   }, [live, refresh]);
   const fromCache = useSyncExternalStore((fn) => api.subscribe(fn), () => (live ? (api as HttpApi).fromCache : false));
+  const syncing = useSyncExternalStore((fn) => api.subscribe(fn), () => (live ? (api as HttpApi).syncing : false));
 
   const me = live
     ? db.members.find((m) => m.id === liveMe?.memberId) ?? { id: liveMe?.memberId ?? '', name: liveMe?.name ?? 'Member', initials: '?', role: 'pilot' as const, active: false, email: '' }
@@ -90,6 +99,7 @@ export function AppProvider({ api, liveMe, onSignOut, children }: { api: PlaneSh
   useEffect(() => { if (live && !me.active && !fromCache) void onSignOut?.(); }, [live, me.active, fromCache, onSignOut]);
   const setMe = useCallback((id: string) => { if (live) return; setMeId(id); safeSet('planeshare.me', id); setModal(null); }, [live]);
   const setTab = useCallback((t: Tab) => { setTabState(t); safeSet('planeshare.tab', t); if (t === 'more') setMore('menu'); window.scrollTo?.(0, 0); refresh(); }, [refresh]);
+  const setMoreAndRefresh = useCallback((p: MorePage) => { setMore(p); window.scrollTo?.(0, 0); refresh(); }, [refresh]);
   const signOut = useCallback(async () => { await onSignOut?.(); }, [onSignOut]);
   const toast = useCallback((text: string, tone: Toast['tone'] = 'success') => {
     const id = ++tid.current;
@@ -98,9 +108,9 @@ export function AppProvider({ api, liveMe, onSignOut, children }: { api: PlaneSh
   }, []);
 
   const value = useMemo<Ctx>(() => ({
-    api, live, refresh, fromCache, signOut, db, me, setMe, offline, tab, setTab, more, setMore, modal,
+    api, live, refresh, fromCache, syncing, signOut, db, me, setMe, offline, tab, setTab, more, setMore: setMoreAndRefresh, modal,
     openModal: setModal, closeModal: () => setModal(null), toast, toasts, now, tz: db.settings.timeZone,
-  }), [api, live, refresh, fromCache, signOut, db, me, setMe, offline, tab, setTab, more, modal, toast, toasts, now]);
+  }), [api, live, refresh, fromCache, syncing, signOut, db, me, setMe, offline, tab, setTab, more, setMoreAndRefresh, modal, toast, toasts, now]);
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
 

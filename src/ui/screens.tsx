@@ -7,6 +7,7 @@ import { fmtHundredths, fmtMoney } from '../domain/decimal';
 import type { Booking, FlightRecord } from '../domain/types';
 import { pilotName } from './bookingViews';
 import { issueStatusLabel, urgencyTone } from './recordViews';
+import { InstallCard } from './appShell';
 
 export function AircraftHero({ compact }: { compact?: boolean }) {
   const { db } = useApp();
@@ -96,6 +97,8 @@ export function Home() {
           </div>
         </div>
       </div>
+
+      {__LIVE__ && <InstallCard />}
 
       {overdue && out && <Banner tone="danger" title="Aircraft overdue">{pilotName(db, out.pilotId)}'s reservation ended {fmtDateTime(out.endUtc, tz)}. It stays checked out until returned. <button className="link" onClick={() => openModal({ kind: 'bookingDetail', bookingId: out.id })}>Open reservation</button></Banner>}
 

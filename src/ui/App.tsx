@@ -7,6 +7,7 @@ import { FlightLog, Home, MyBookings } from './screens';
 import { CalendarScreen } from './calendar';
 import { MaintenanceDetail, MoreScreen } from './more';
 import { fmtDateTime } from '../domain/time';
+import { PullToRefresh, SyncBar } from './appShell';
 
 const NAV: { id: Tab; label: string; icon: string }[] = [
   { id: 'home', label: 'Home', icon: 'home' },
@@ -27,7 +28,8 @@ export function App() {
 
   return (
     <div className="shell">
-      {!live && <div className="demo-bar" role="region" aria-label="Demo mode">
+      {__LIVE__ && <><SyncBar /><PullToRefresh /></>}
+      {!__LIVE__ && <div className="demo-bar" role="region" aria-label="Demo mode">
         <span className="demo-tag">Demo mode: simulated accounts and data</span>
         <label className="acct-switch">
           <span className="sr-only">Viewing as</span>

@@ -1,8 +1,8 @@
 # PlaneShare — N733XZ
 
-Scheduling, check-out and return, flight-hour records, maintenance and issues for one shared aircraft and its members. Same design as PGL (one D1 database, phone sign-in), deployed as a Cloudflare Worker with static assets. `server/worker.ts` routes `/api/*` to the handlers in `functions/api/`.
+Scheduling, check-out and return, flight-hour records, maintenance and issues for one shared aircraft and its members. Same setup as PGL: Cloudflare Pages + Pages Functions + one D1 database, phone sign-in. Installable web app.
 
-- **Live site:** 733xz.riarinc.com (after setup — see `docs/SETUP_LIVE.md`)
+- **Live site:** 733xz.riarinc.com — setup in `docs/SETUP_LIVE.md`
 - **Demo:** `npm run build:preview` makes a single-file demo with fictional data for the Claude preview.
 
 ## Run it
@@ -11,7 +11,7 @@ Scheduling, check-out and return, flight-hour records, maintenance and issues fo
 npm install
 npm test            # unit tests (Vitest)
 npm run typecheck
-npm run build       # dist-live/  — the files the Worker serves
+npm run build       # dist-live/  — what Cloudflare Pages serves (no demo code or sample data)
 npm run dev:live    # local live site with a local D1 database (needs .dev.vars)
 npm run test:live   # end-to-end checks against the local live site
 ```
@@ -38,4 +38,7 @@ Sign-in (phone number, sign-in code, or admin code) · every permission · overl
 
 ## Not included
 Billing or payments, flight planning, weather, public sign-up, push notifications (PGL has these; can be added).
+
+## Web app
+Installable from Safari (Share → Add to Home Screen) or Chrome (Install app). Pull down on any screen to reload. Changing screens re-checks for a new version and pulls the latest data.
 Operational usage records only — not a replacement for pilot or aircraft logbooks, and an open calendar slot says nothing about airworthiness.

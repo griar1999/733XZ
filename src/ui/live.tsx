@@ -219,7 +219,7 @@ export function AccessScreen() {
 
       <Section title="Paste a list of phone numbers">
         <Field id="ac-paste" label="One member per line: Name, phone" hint="Works with a list copied from Contacts, a text, or Excel. Names must match existing members.">
-          <textarea rows={4} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={'Alex Rivera, (661) 555-0101\nJordan Kim, 661-555-0102'} />
+          <textarea rows={4} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={'Jane Smith, (661) 555-0101\nJohn Lee, 661-555-0102'} />
         </Field>
         {parsed.length > 0 && (
           <ul className="plain">{parsed.map((p, i) => (

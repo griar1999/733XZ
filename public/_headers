@@ -6,3 +6,9 @@
   Permissions-Policy: camera=(self), geolocation=()
 /sw.js
   Cache-Control: no-cache
+/version.json
+  Cache-Control: no-store
+/index.html
+  Cache-Control: no-cache
+/
+  Cache-Control: no-cache

@@ -43,6 +43,8 @@ export class HttpApi {
   private serverOffline = false;
   /** true when the data on screen came from this phone's cache instead of the server */
   fromCache = false;
+  /** true while fresh data is loading from the server */
+  syncing = false;
   /** server clock minus phone clock, so overdue and check-out windows use server time */
   private skew = 0;
 
@@ -77,10 +79,13 @@ export class HttpApi {
 
   /** Load the latest shared data. Falls back to this phone's last copy (read-only) when offline. */
   async refresh(): Promise<void> {
+    this.syncing = true; this.emit();
     try {
       const r = await call<{ state: DbState; version: number; now: string }>('/api/state');
+      this.syncing = false;
       this.accept(r.state, r.version, r.now);
     } catch (e) {
+      this.syncing = false; this.emit();
       if (e instanceof ApiError && e.code === 'offline') {
         this.serverOffline = true;
         if (!this.state) this.loadCache();
