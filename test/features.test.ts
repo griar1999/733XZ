@@ -225,3 +225,21 @@ describe('Inspections', () => {
     expect(timedNotices(s, NOW + 60000).notices.filter((n) => /Transponder/.test(n.title))).toHaveLength(0);
   });
 });
+
+describe('Editing names', () => {
+  it('admin can rename anyone; a pilot can rename only himself', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    const s0 = api.snapshot();
+    const pilot = s0.members.find((m) => m.role === 'pilot' && m.active)!;
+    const other = s0.members.find((m) => m.role === 'pilot' && m.active && m.id !== pilot.id)!;
+    expect((await api.updateMember('m1', other.id, { name: 'Sam Lee' })).name).toBe('Sam Lee');
+    expect((await api.updateMember(pilot.id, pilot.id, { name: '  Jo Park ' })).name).toBe('Jo Park');
+    // the Settings row sends role/active unchanged along with the name — still allowed
+    await api.updateMember(pilot.id, pilot.id, { name: 'Jo P', role: 'pilot', active: true });
+    await expect(api.updateMember(pilot.id, other.id, { name: 'X' })).rejects.toThrow(/admin/);
+    await expect(api.updateMember(pilot.id, pilot.id, { role: 'admin' })).rejects.toThrow(/own name/);
+    await expect(api.updateMember(pilot.id, pilot.id, { name: ' ' })).rejects.toThrow(/required/);
+    await expect(api.updateMember(pilot.id, pilot.id, { name: 'sam lee' })).rejects.toThrow(/already/);
+    expect(api.snapshot().audit.some((a) => a.summary === 'Renamed Jo Park to Jo P')).toBe(true);
+  });
+});

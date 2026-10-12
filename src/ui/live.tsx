@@ -205,6 +205,7 @@ export function AccessScreen() {
                     <p className="fine">{r?.phone ? formatPhone(r.phone) : 'No phone'} · {r?.hasCode ? 'Has code' : 'No code'} · {r?.lastLogin ? `Last sign-in ${fmtDateTime(r.lastLogin, db.settings.timeZone)}` : 'Never signed in'}</p>
                   </div>
                   <div className="btn-row">
+                    <NameEdit memberId={m.id} current={m.name} label="Edit name" />
                     <PhoneEdit memberId={m.id} current={r?.phone ?? null} busy={busy} onSave={(phone) => doIt('phone' + m.id, () => auth.setPhones([{ memberId: m.id, phone }]), phone ? 'Phone saved' : 'Phone removed')} />
                     <Button disabled={offline || !!busy} pending={busy === 'code' + m.id} onClick={() => doIt('code' + m.id, async () => setShown(await auth.newCode(m.id)))}>New code</Button>
                     {m.id !== me.id && (confirmRevoke === m.id
@@ -221,6 +222,23 @@ export function AccessScreen() {
       </Section>
 
     </>
+  );
+}
+
+/** Rename a member. Admins can rename anyone; each pilot can rename himself. */
+export function NameEdit({ memberId, current, label }: { memberId: string; current: string; label: string }) {
+  const { api, me, toast, offline } = useApp();
+  const [open, setOpen] = useState(false);
+  const [v, setV] = useState(current);
+  const act = useAction(() => api.updateMember(me.id, memberId, { name: v.trim() }));
+  if (!open) return <Button disabled={offline} onClick={() => { setV(current); setOpen(true); }}>{label}</Button>;
+  return (
+    <form className="inline-edit" onSubmit={async (e) => { e.preventDefault(); if (!v.trim() || v.trim() === current) { setOpen(false); return; } const r = await act.run(); if (r) { toast(`Name changed to ${r.name}`); setOpen(false); } }}>
+      <input aria-label="Name" value={v} maxLength={60} onChange={(e) => setV(e.target.value)} autoFocus autoCapitalize="words" />
+      <Button type="submit" variant="primary" disabled={!v.trim()} pending={act.pending}>Save</Button>
+      <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+      {act.error && <p className="field-error full">{act.error.message}</p>}
+    </form>
   );
 }
 
@@ -246,7 +264,10 @@ export function AccountCard() {
       <div className="access-row">
         <Avatar m={me} />
         <div className="access-main"><p><strong>{me.name}</strong></p><p className="fine">{me.role === 'admin' ? 'Admin + pilot' : 'Pilot'} · {db.settings.appName}</p></div>
-        <Button pending={busy} onClick={async () => { setBusy(true); await signOut(); }}>Sign out</Button>
+        <div className="btn-row">
+          <NameEdit memberId={me.id} current={me.name} label="Edit my name" />
+          <Button pending={busy} onClick={async () => { setBusy(true); await signOut(); }}>Sign out</Button>
+        </div>
       </div>
       <PushToggle />
     </Section>

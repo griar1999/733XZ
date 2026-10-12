@@ -275,14 +275,16 @@ function MemberRow({ m }: { m: Member }) {
   const act = useAction(() => api.updateMember(me.id, m.id, { name, role, active }));
   const dirty = name !== m.name || role !== m.role || active !== m.active;
   const isAdmin = me.role === 'admin';
+  const self = m.id === me.id;
+  const canSave = isAdmin || self;
   return (
     <div className="member-card">
       <form className="member-row" onSubmit={async (e) => { e.preventDefault(); const r = await act.run(); if (r) toast(`${r.name} updated`); }}>
         <Avatar m={m} />
-        <input aria-label={`Name for ${m.name}`} value={name} onChange={(e) => setName(e.target.value)} disabled={!isAdmin} />
+        <input aria-label={`Name for ${m.name}`} value={name} onChange={(e) => setName(e.target.value)} disabled={!canSave} />
         <select aria-label={`Role for ${m.name}`} value={role} onChange={(e) => setRole(e.target.value as Member['role'])} disabled={!isAdmin}><option value="admin">Admin + pilot</option><option value="pilot">Pilot</option></select>
         <label className="switch small"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={!isAdmin} /> Active</label>
-        {isAdmin && <Button type="submit" disabled={!dirty} pending={act.pending}>Save</Button>}
+        {canSave && <Button type="submit" disabled={!dirty || !name.trim()} pending={act.pending}>Save</Button>}
         {act.error && <p className="field-error full">{act.error.message}</p>}
       </form>
       {/* Outside the Save form so its own confirm form works on its own */}

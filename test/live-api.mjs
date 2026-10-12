@@ -43,6 +43,10 @@ ok((await act(pa, 'addMember', 'Sneaky', 'admin')).status === 403, 'pilot cannot
 ok((await act(pa, 'updateSettings', { rateCentsPerHour: 1 })).status === 403, 'pilot cannot change settings');
 ok((await req(pa, '/api/admin/accounts')).status === 403, 'pilot cannot see sign-in admin');
 ok((await act(pa, 'createBooking', { pilotId: B, startUtc: at(3, 16), endUtc: at(3, 18), destination: '', notes: '' })).status === 403, 'pilot cannot book for someone else');
+ok((await act(pa, 'updateMember', B, { name: 'Renamed B' })).status === 403, 'pilot cannot rename someone else');
+ok((await act(pa, 'updateMember', A, { name: 'Test Pilot A2' })).status === 200, 'pilot renames himself');
+ok((await act(pa, 'updateMember', A, { role: 'admin' })).status === 403, 'pilot cannot make himself admin');
+ok((await act(admin, 'updateMember', A, { name: 'Test Pilot A' })).status === 200, 'admin renames a pilot');
 const stP = await req(pa, '/api/state');
 ok(stP.data.state.members.every((m) => m.id === A || !m.email), 'pilots do not see other members\' emails');
 

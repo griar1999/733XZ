@@ -336,21 +336,29 @@ export const ACTIONS: Record<string, ActionDef> = {
   }),
 
   updateMember: def((db, actorId, now, [rawId, rawPatch]) => {
-    requireAdmin(db, actorId);
+    // Admins can change anyone. A pilot can change only his own name.
+    const who = actor(db, actorId);
     const m = db.members.find((x) => x.id === str(rawId, 40));
     if (!m || m.removed) throw new ApiError('not_found', 'Member not found.');
     const p = (rawPatch ?? {}) as Record<string, unknown>;
+    if (who.role !== 'admin') {
+      if (m.id !== who.id) throw new ApiError('forbidden', 'Only an admin can do this.');
+      const other = Object.keys(p).filter((k) => k !== 'name' && (p as Record<string, unknown>)[k] !== (m as unknown as Record<string, unknown>)[k]);
+      if (other.length) throw new ApiError('forbidden', 'You can change your own name. Ask an admin for anything else.');
+    }
     const next: Member = { ...m };
     if ('name' in p) next.name = str(p.name, 60);
     if ('email' in p) next.email = str(p.email, 120);
     if ('role' in p) next.role = p.role === 'admin' ? 'admin' : 'pilot';
     if ('active' in p) next.active = p.active === true;
     if (!next.name.trim()) throw new ApiError('validation', 'Name is required.', { fieldErrors: { name: 'Name is required.' } });
+    const nm = next.name.trim().toLowerCase();
+    if (db.members.some((x) => x.id !== m.id && !x.removed && x.name.trim().toLowerCase() === nm)) throw new ApiError('validation', 'Another member already has that name.', { fieldErrors: { name: 'Another member already has that name.' } });
     const admins = db.members.filter((x) => { const y = x.id === m.id ? next : x; return y.role === 'admin' && y.active; });
     if (admins.length === 0) throw new ApiError('validation', 'Keep at least one active admin.');
     const before = { ...m };
     Object.assign(m, next, { name: next.name.trim(), initials: initialsOf(next.name) });
-    audit(db, now, { actorId, action: 'member.update', entityType: 'member', entityId: m.id, summary: `Updated member ${m.name}`, before, after: { ...m } });
+    audit(db, now, { actorId, action: 'member.update', entityType: 'member', entityId: m.id, summary: before.name !== m.name ? `Renamed ${before.name} to ${m.name}` : `Updated member ${m.name}`, before, after: { ...m } });
     return m;
   }),
 
