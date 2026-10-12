@@ -5,7 +5,7 @@ import type { HttpApi, Me } from '../services/httpApi';
 import { reloadIfNewVersion } from '../services/buildMode';
 
 export type Tab = 'home' | 'calendar' | 'bookings' | 'log' | 'more';
-export type MorePage = 'menu' | 'aircraft' | 'activity' | 'statements' | 'settings' | 'access' | 'install' | 'demo' | 'plan';
+export type MorePage = 'menu' | 'inspections' | 'aircraft' | 'activity' | 'statements' | 'settings' | 'access' | 'install' | 'demo' | 'plan';
 
 export type ModalState =
   | { kind: 'booking'; booking?: Booking; prefill?: { startUtc: string; endUtc: string } }
@@ -66,7 +66,10 @@ export function AppProvider({ api, liveMe, onSignOut, children }: { api: PlaneSh
   const [tab, setTabState] = useState<Tab>(() => hashTab() ?? ((safeGet('planeshare.tab') as Tab) || 'home'));
   // a tapped notification opens /#calendar, /#log, etc.
   useEffect(() => {
-    const f = () => { const h = hashTab(); if (h) { setTabState(h); if (h === 'more') setMore('menu'); history.replaceState(null, '', location.pathname); } };
+    const f = () => {
+      if (location.hash === '#inspections') { setTabState('more'); setMore('inspections'); history.replaceState(null, '', location.pathname); return; }
+      const h = hashTab(); if (h) { setTabState(h); if (h === 'more') setMore('menu'); history.replaceState(null, '', location.pathname); }
+    };
     f();
     window.addEventListener('hashchange', f);
     const onMsg = (e: MessageEvent) => { if (e.data?.type === 'open' && typeof e.data.url === 'string') { location.href = e.data.url; } };

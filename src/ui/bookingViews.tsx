@@ -5,6 +5,7 @@ import { addDays, fmtDateTime, fmtDuration, fmtRange, localToUtc, minutesBetween
 import { canEditBooking, charges, checkOutBlocker, findConflicts, isOverdue, overlaps, sumMeter } from '../domain/rules';
 import { fmtHundredths, fmtMoney } from '../domain/decimal';
 import type { Booking } from '../domain/types';
+import { OverdueInspectionsNote } from './inspections';
 
 export function pilotName(db: { members: { id: string; name: string }[] }, id: string) {
   return db.members.find((m) => m.id === id)?.name ?? 'Unknown member';
@@ -181,6 +182,7 @@ export function BookingDetail({ bookingId }: { bookingId: string }) {
         <div className="confirm-box" role="group" aria-label="Confirm action">
           <p className="confirm-title">{confirm === 'cancel' ? 'Cancel this reservation?' : confirm === 'noshow' ? 'Record a no-show?' : 'Check out the aircraft now?'}</p>
           <p className="fine">{confirm === 'cancel' ? 'The record is kept as Canceled and the time opens for others right away.' : confirm === 'noshow' ? 'This marks the reservation as No-show. It is recorded in activity history.' : 'You confirm you are taking the aircraft. Check restrictions and do your normal preflight. PlaneShare does not determine airworthiness.'}</p>
+          {confirm === 'checkout' && <OverdueInspectionsNote />}
           {confirm !== 'checkout' && <Field id="bd-reason" label="Reason (optional)"><input value={reason} onChange={(e) => setReason(e.target.value)} /></Field>}
           {actErr && <Banner tone="danger" title={actErr.message} />}
           <div className="btn-row">

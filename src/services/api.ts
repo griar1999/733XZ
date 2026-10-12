@@ -1,5 +1,6 @@
 // The UI talks only to this interface. MockApi runs it on the device (demo build);
 // HttpApi runs it against the Cloudflare Pages Functions (live build).
+import type { Inspection } from '../domain/types';
 import type { AircraftSettings, Booking, BookingInput, DbState, FlightInput, FlightRecord, Issue, IssueStatus, MaintenanceBlock, Member, Restriction } from '../domain/types';
 import type { Conflict } from '../domain/rules';
 import type { IssueInput, MaintenanceInput, ReturnInput } from './actions';
@@ -50,7 +51,10 @@ export interface PlaneShareApi {
   updateMember(actorId: string, id: string, patch: Partial<Pick<Member, 'name' | 'role' | 'active' | 'email'>>): Promise<Member>;
   addMember(actorId: string, name: string, role: Member['role']): Promise<Member>;
   removeMember(actorId: string, id: string, reason: string): Promise<{ removed: string; canceledBookings: number; deleted: boolean }>;
-  clearData(actorId: string, opts: { bookings: boolean; flights: boolean; aircraft: boolean; history: boolean; confirm: string }): Promise<{ cleared: string[] }>;
+  recordInspection(actorId: string, id: string, input: { date: string; tach: number | null; notes: string }): Promise<Inspection>;
+  updateInspection(actorId: string, id: string, patch: Partial<Pick<Inspection, 'name' | 'kind' | 'interval' | 'active' | 'pilotsCanRecord' | 'lastDate' | 'lastTach'>>): Promise<Inspection>;
+  addInspection(actorId: string, input: { name: string; kind: Inspection['kind']; interval: number; pilotsCanRecord: boolean }): Promise<Inspection>;
+  clearData(actorId: string, opts: { bookings: boolean; flights: boolean; aircraft: boolean; inspections?: boolean; history: boolean; confirm: string }): Promise<{ cleared: string[] }>;
   resetDemo(): Promise<void>;
 }
 
@@ -75,6 +79,9 @@ export function actionMethods(run: <T>(name: string, actorId: string, args: unkn
     updateMember: (a: string, id: string, patch: Partial<Pick<Member, 'name' | 'role' | 'active' | 'email'>>) => run<Member>('updateMember', a, [id, patch]),
     addMember: (a: string, name: string, role: Member['role']) => run<Member>('addMember', a, [name, role]),
     removeMember: (a: string, id: string, reason: string) => run<{ removed: string; canceledBookings: number; deleted: boolean }>('removeMember', a, [id, reason]),
-    clearData: (a: string, opts: { bookings: boolean; flights: boolean; aircraft: boolean; history: boolean; confirm: string }) => run<{ cleared: string[] }>('clearData', a, [opts]),
+    recordInspection: (a: string, id: string, input: { date: string; tach: number | null; notes: string }) => run<Inspection>('recordInspection', a, [id, input]),
+    updateInspection: (a: string, id: string, patch: Partial<Pick<Inspection, 'name' | 'kind' | 'interval' | 'active' | 'pilotsCanRecord' | 'lastDate' | 'lastTach'>>) => run<Inspection>('updateInspection', a, [id, patch]),
+    addInspection: (a: string, input: { name: string; kind: Inspection['kind']; interval: number; pilotsCanRecord: boolean }) => run<Inspection>('addInspection', a, [input]),
+    clearData: (a: string, opts: { bookings: boolean; flights: boolean; aircraft: boolean; inspections?: boolean; history: boolean; confirm: string }) => run<{ cleared: string[] }>('clearData', a, [opts]),
   };
 }

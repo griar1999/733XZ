@@ -5,6 +5,10 @@
 // a result. If it throws, nothing is saved.
 import type { AircraftSettings, AuditEntry, Booking, BookingInput, DbState, FlightInput, FlightRecord, Issue, IssueStatus, IssueUrgency, MaintenanceBlock, Member, Restriction } from '../domain/types';
 import { ApiError } from './api';
+import { ensureInspections, intervalLabel, currentTach } from '../domain/inspections';
+import { toLocalParts } from '../domain/time';
+import { fmtHundredths } from '../domain/decimal';
+import type { Inspection, InspectionKind } from '../domain/types';
 import { BLOCKING, canEditBooking, checkOutBlocker, findConflicts, overlaps, suggestSlot, validateFlight, validateTimes } from '../domain/rules';
 
 export interface MaintenanceInput { title: string; startUtc: string; endUtc: string; notes: string }
@@ -358,14 +362,18 @@ export const ACTIONS: Record<string, ActionDef> = {
     requireAdmin(db, actorId);
     const o = (rawOpts ?? {}) as Record<string, unknown>;
     if (o.confirm !== 'CLEAR') throw new ApiError('validation', 'Type CLEAR to confirm.', { fieldErrors: { confirm: 'Type CLEAR in capitals.' } });
-    const what = { bookings: o.bookings === true, flights: o.flights === true, aircraft: o.aircraft === true, history: o.history === true };
-    if (!what.bookings && !what.flights && !what.aircraft && !what.history) throw new ApiError('validation', 'Choose at least one thing to clear.');
+    const what = { bookings: o.bookings === true, flights: o.flights === true, aircraft: o.aircraft === true, inspections: o.inspections === true, history: o.history === true };
+    if (!what.bookings && !what.flights && !what.aircraft && !what.inspections && !what.history) throw new ApiError('validation', 'Choose at least one thing to clear.');
     const counts: string[] = [];
     if (what.bookings) { counts.push(`${db.bookings.length} booking(s)`); db.bookings = []; }
     if (what.flights) { counts.push(`${db.flights.length} flight record(s)`); db.flights = []; }
     if (what.aircraft) {
       counts.push(`${db.issues.length} issue(s), ${db.maintenance.length} maintenance block(s), ${db.restrictions.length} restriction(s)`);
       db.issues = []; db.maintenance = []; db.restrictions = [];
+    }
+    if (what.inspections) {
+      counts.push('inspection dates');
+      for (const i of db.inspections) { i.lastDate = null; i.lastTach = null; i.history = []; i.notified = null; }
     }
     if (what.history) db.audit = [];
     audit(db, now, { actorId, action: 'data.clear', entityType: 'settings', summary: `Cleared test data: ${counts.join('; ') || 'activity history'}${what.history && counts.length ? '; activity history' : ''}` });
@@ -406,6 +414,80 @@ export const ACTIONS: Record<string, ActionDef> = {
     return { removed: m.id, canceledBookings: future.length, deleted: !hasHistory };
   }),
 
+  // ---------- inspections ----------
+  /** Record that an inspection or check was completed. Admins; members too for checks marked "pilots can record" (VOR). */
+  recordInspection: def((db, actorId, now, [rawId, raw]) => {
+    const who = actor(db, actorId);
+    const insp = db.inspections.find((i) => i.id === str(rawId, 40) && i.active);
+    if (!insp) throw new ApiError('not_found', 'That inspection no longer exists.');
+    if (who.role !== 'admin' && !insp.pilotsCanRecord) throw new ApiError('forbidden', `Only an admin can record the ${insp.name}.`);
+    const o = (raw ?? {}) as Record<string, unknown>;
+    const date = str(o.date, 10);
+    const notes = str(o.notes, 300).trim();
+    const tach = numOrNull(o.tach);
+    const fe: Record<string, string> = {};
+    const today = toLocalParts(now, db.settings.timeZone).date;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date))) fe.date = 'Enter the date it was done.';
+    else if (date > today) fe.date = 'The date can\'t be in the future.';
+    else if (insp.lastDate && date < insp.lastDate) fe.date = `That's before the last one recorded (${insp.lastDate}). Use a later date.`;
+    if (insp.kind === 'tach') {
+      if (tach === null) fe.tach = 'Enter the tach reading when it was done.';
+      else if (insp.lastTach !== null && tach < insp.lastTach) fe.tach = `That's below the last recorded tach for this inspection (${fmtHundredths(insp.lastTach)}).`;
+      else { const cur = currentTach(db); if (cur !== null && tach > cur + 500) fe.tach = `That's more than 5 hours past the latest tach in the flight log (${fmtHundredths(cur)}). Check the reading.`; }
+    }
+    if (Object.keys(fe).length) throw new ApiError('validation', Object.values(fe)[0], { fieldErrors: fe });
+    insp.lastDate = date;
+    insp.lastTach = insp.kind === 'tach' ? tach : tach ?? insp.lastTach;
+    insp.history.unshift({ date, tach: insp.kind === 'tach' ? tach : tach, notes, by: actorId, at: iso(now) });
+    if (insp.history.length > 50) insp.history.length = 50;
+    insp.notified = null;
+    audit(db, now, { actorId, action: 'inspection.record', entityType: 'inspection', entityId: insp.id, summary: `Recorded ${insp.name} done ${date}${insp.kind === 'tach' && tach !== null ? ` at tach ${fmtHundredths(tach)}` : ''}${notes ? ` — ${notes}` : ''}` });
+    return insp;
+  }),
+
+  /** Admin: change an inspection's name, interval, who can record it, or turn it off. Can also correct the last-done values. */
+  updateInspection: def((db, actorId, now, [rawId, rawPatch]) => {
+    requireAdmin(db, actorId);
+    const insp = db.inspections.find((i) => i.id === str(rawId, 40));
+    if (!insp) throw new ApiError('not_found', 'That inspection no longer exists.');
+    const p = (rawPatch ?? {}) as Record<string, unknown>;
+    const before = { ...insp, history: undefined };
+    const next: Inspection = { ...insp };
+    if ('name' in p) next.name = str(p.name, 60).trim();
+    if ('kind' in p && ['tach', 'months', 'days', 'yearEnd'].includes(String(p.kind))) next.kind = p.kind as InspectionKind;
+    if ('interval' in p) next.interval = Number(p.interval);
+    if ('active' in p) next.active = p.active === true;
+    if ('pilotsCanRecord' in p) next.pilotsCanRecord = p.pilotsCanRecord === true;
+    // admin correction of the last-done values (kept in activity history with the old values)
+    if ('lastDate' in p) next.lastDate = p.lastDate ? str(p.lastDate, 10) : null;
+    if ('lastTach' in p) next.lastTach = numOrNull(p.lastTach);
+    const fe: Record<string, string> = {};
+    if (next.lastDate && (!/^\d{4}-\d{2}-\d{2}$/.test(next.lastDate) || next.lastDate > toLocalParts(now, db.settings.timeZone).date)) fe.lastDate = 'Enter a past date.';
+    if (!next.name) fe.name = 'Enter a name.';
+    if (next.kind !== 'yearEnd' && (!Number.isInteger(next.interval) || next.interval < 1 || next.interval > (next.kind === 'tach' ? 2000 : next.kind === 'months' ? 120 : 3650))) fe.interval = 'Enter a whole number in range.';
+    if (next.kind === 'yearEnd') next.interval = 1;
+    if (Object.keys(fe).length) throw new ApiError('validation', Object.values(fe)[0], { fieldErrors: fe });
+    Object.assign(insp, next, { notified: null });
+    audit(db, now, { actorId, action: 'inspection.update', entityType: 'inspection', entityId: insp.id, summary: `Changed ${insp.name}: ${intervalLabel(insp.kind, insp.interval)}${insp.active ? '' : ' (turned off)'}`, before });
+    return insp;
+  }),
+
+  /** Admin: add another recurring inspection or check. */
+  addInspection: def((db, actorId, now, [raw]) => {
+    requireAdmin(db, actorId);
+    const o = (raw ?? {}) as Record<string, unknown>;
+    const name = str(o.name, 60).trim();
+    const kind = (['tach', 'months', 'days', 'yearEnd'].includes(String(o.kind)) ? o.kind : 'months') as InspectionKind;
+    const interval = kind === 'yearEnd' ? 1 : Number(o.interval);
+    if (!name) throw new ApiError('validation', 'Enter a name.', { fieldErrors: { name: 'Enter a name.' } });
+    if (db.inspections.some((i) => i.active && i.name.toLowerCase() === name.toLowerCase())) throw new ApiError('validation', `${name} is already on the list.`, { fieldErrors: { name: 'Already on the list.' } });
+    if (!Number.isInteger(interval) || interval < 1 || interval > 3650) throw new ApiError('validation', 'Enter a whole number for how often.', { fieldErrors: { interval: 'Enter a whole number.' } });
+    const insp: Inspection = { id: newId('insp'), name, kind, interval, active: true, builtIn: false, pilotsCanRecord: o.pilotsCanRecord === true, lastDate: null, lastTach: null, history: [], notified: null };
+    db.inspections.push(insp);
+    audit(db, now, { actorId, action: 'inspection.add', entityType: 'inspection', entityId: insp.id, summary: `Added inspection: ${name} (${intervalLabel(kind, interval)})` });
+    return insp;
+  }),
+
   addMember: def((db, actorId, now, [rawName, rawRole]) => {
     requireAdmin(db, actorId);
     const nm = str(rawName, 60).trim().replace(/\s+/g, ' ');
@@ -428,7 +510,7 @@ export function runAction(state: DbState, actionName: string, args: unknown[], a
   const a = ACTIONS[actionName];
   if (!a) throw new ApiError('validation', 'Unknown action.');
   if (a.demoOnly && live) throw new ApiError('forbidden', 'Not available in the live app.');
-  const db: DbState = JSON.parse(JSON.stringify(state));
+  const db: DbState = ensureInspections(JSON.parse(JSON.stringify(state)));
   try {
     const result = a.run(db, actorId, now, Array.isArray(args) ? args : []);
     db.savedAt = iso(now);

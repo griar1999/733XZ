@@ -1,7 +1,8 @@
 // Who gets a phone notification for each change. Pure functions: the server compares the
 // state before and after an action (or a timed check) and sends whatever these return.
 import type { AuditEntry, Booking, DbState } from './types';
-import { fmtDateTime, fmtRange } from './time';
+import { fmtDateTime, fmtRange, toLocalParts } from './time';
+import { inspectionViews } from './inspections';
 
 export interface PhoneNotice { to: string[]; title: string; body: string; url: string; tag: string }
 
@@ -120,11 +121,24 @@ export function timedNotices(db: DbState, nowMs: number): { notices: PhoneNotice
       if (next && next.pilotId !== b.pilotId) notices.push({ to: [next.pilotId], title: `${tail} not back yet`, body: `${firstName(db, b.pilotId)}'s booking ended ${fmtDateTime(b.endUtc, tz)} and the aircraft is still checked out. Your booking: ${fmtRange(next.startUtc, next.endUtc, tz)}.`, url: '/', tag: `overdue-next:${b.id}` });
     }
   }
+  // Inspections: tell admins when one is due soon, everyone when one is overdue. Once per change of status.
+  const today = toLocalParts(nowMs, tz).date;
+  for (const { insp, due } of inspectionViews(ensureList(db), today)) {
+    const st = due.status === 'soon' || due.status === 'overdue' ? due.status : null;
+    if ((insp.notified ?? null) === st) continue;
+    insp.notified = st; changed = true;
+    if (st === 'soon') notices.push({ to: admins(db), title: `${insp.name} due soon`, body: `${tail}: ${due.summary}.`, url: '/#inspections', tag: `insp-soon:${insp.id}` });
+    if (st === 'overdue') notices.push({ to: active(db), title: `${insp.name} overdue`, body: `${tail}: ${due.summary}. Check with an admin before flying.`, url: '/#inspections', tag: `insp-over:${insp.id}` });
+  }
   return { notices, changed };
 }
 
+function ensureList(db: DbState): DbState { if (!Array.isArray(db.inspections)) db.inspections = []; return db; }
+
 /** True if any booking is due a timed notice, so the server only writes when needed. */
 export function timedNoticesDue(db: DbState, nowMs: number): boolean {
+  const today = toLocalParts(nowMs, db.settings.timeZone).date;
+  if (inspectionViews(ensureList(db), today).some(({ insp, due }) => (insp.notified ?? null) !== (due.status === 'soon' || due.status === 'overdue' ? due.status : null))) return true;
   return db.bookings.some((b: Booking) =>
     (b.status === 'confirmed' && !b.remindedAt && Date.parse(b.startUtc) > nowMs && Date.parse(b.startUtc) - nowMs <= REMIND_BEFORE_MIN * 60000) ||
     (b.status === 'checked_out' && !b.overdueNotifiedAt && nowMs - Date.parse(b.endUtc) >= OVERDUE_AFTER_MIN * 60000));

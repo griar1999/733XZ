@@ -4,6 +4,7 @@ import type { DbState } from '../domain/types';
 import { ApiError, actionMethods, type PlaneShareApi } from './api';
 import { runAction } from './actions';
 import { SCHEMA_VERSION, seedState } from './seed';
+import { ensureInspections } from '../domain/inspections';
 
 export interface KeyValueStorage { getItem(k: string): string | null; setItem(k: string, v: string): void; removeItem(k: string): void }
 export interface MockOptions { storage?: KeyValueStorage | null; now?: () => number; latencyMs?: number; key?: string }
@@ -42,7 +43,7 @@ export class MockApi {
       this.storageAvailable = !!this.storage;
       if (raw) {
         const parsed = JSON.parse(raw) as DbState;
-        if (parsed.schemaVersion === SCHEMA_VERSION) return parsed;
+        if (parsed.schemaVersion === SCHEMA_VERSION) return ensureInspections(parsed);
       }
     } catch { this.storageAvailable = false; }
     const s = seedState(this.now());

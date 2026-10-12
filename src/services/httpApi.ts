@@ -2,6 +2,7 @@
 // The server re-runs every rule (permissions, overlaps, meters) as the signed-in member and
 // saves with a version check, so two phones can't both win the same slot.
 import type { DbState, Member } from '../domain/types';
+import { ensureInspections } from '../domain/inspections';
 import { ApiError, actionMethods, type ApiErrorCode, type ApiErrorDetails, type PlaneShareApi } from './api';
 
 export interface Me { memberId: string; name: string; role: Member['role']; isOwner: boolean }
@@ -68,7 +69,7 @@ export class HttpApi {
   nowMs(): number { return Date.now() + this.skew; }
 
   private accept(state: DbState, version: number, serverNow?: string) {
-    this.state = state;
+    this.state = ensureInspections(state);
     this.version = version;
     this.fromCache = false;
     this.serverOffline = false;
@@ -101,7 +102,7 @@ export class HttpApi {
       const raw = localStorage.getItem(CACHE_KEY);
       if (!raw) return;
       const c = JSON.parse(raw) as { state: DbState; version: number };
-      this.state = c.state; this.version = c.version; this.fromCache = true;
+      this.state = ensureInspections(c.state); this.version = c.version; this.fromCache = true;
     } catch { /* nothing cached */ }
   }
 

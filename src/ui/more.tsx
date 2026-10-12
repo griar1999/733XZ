@@ -14,10 +14,15 @@ export const demoPages: { DemoTools?: React.FC; Plan?: React.FC } = {};
 import { AccessScreen, AccountCard } from './live';
 import { InstallCard } from './appShell';
 import { ClearDataCard, RemoveMemberButton, StatementsScreen } from './statements';
+import { InspectionsScreen, useInspectionViews } from './inspections';
 
 export function MoreScreen() {
   const { more, setMore, me, live } = useApp();
+  const iv = useInspectionViews();
+  const nOver = iv.filter((v) => v.due.status === 'overdue').length, nSoon = iv.filter((v) => v.due.status === 'soon').length;
+  const inspSub = nOver ? `${nOver} overdue${nSoon ? `, ${nSoon} due soon` : ''}` : nSoon ? `${nSoon} due soon` : 'Last done and next due';
   if (more === 'aircraft') return <Sub title="Aircraft status"><AircraftStatus /></Sub>;
+  if (more === 'inspections') return <Sub title="Inspections"><InspectionsScreen /></Sub>;
   if (more === 'statements') return <Sub title="Monthly statements"><StatementsScreen /></Sub>;
   if (more === 'activity') return <Sub title="Activity history"><Activity /></Sub>;
   if (more === 'settings') return <Sub title={me.role === 'admin' ? 'Admin settings' : 'Aircraft settings'}><Settings /></Sub>;
@@ -26,6 +31,7 @@ export function MoreScreen() {
   if (!__LIVE__ && more === 'demo') return <Sub title="Demo tools">{demoPages.DemoTools && <demoPages.DemoTools />}</Sub>;
   if (!__LIVE__ && more === 'plan') return <Sub title="Production plan">{demoPages.Plan && <demoPages.Plan />}</Sub>;
   const items: { id: MorePage; icon: string; label: string; sub: string }[] = [
+    { id: 'inspections', icon: 'check', label: 'Inspections', sub: inspSub },
     { id: 'aircraft', icon: 'wrench', label: 'Aircraft status', sub: 'Restrictions, issues, maintenance' },
     { id: 'statements', icon: 'receipt', label: 'Monthly statements', sub: me.role === 'admin' ? 'Hours, rental and fuel by pilot' : 'Your hours, rental and fuel' },
     { id: 'activity', icon: 'history', label: 'Activity history', sub: 'Who changed what, and when' },

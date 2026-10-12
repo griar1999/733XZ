@@ -28,6 +28,22 @@ Reminders and overdue notices are sent by `.github/workflows/tick.yml`, which ca
 ## Optional variables
 - `OWNER_NAME` (Text): the admin's display name on first start. Defaults to `G`.
 
+## Inspections
+More → **Inspections** (also summarized on Home). Each shows Last done and Next due:
+| Inspection | Due |
+|---|---|
+| 50-Hour | every 50 tach hours (from the tach at the last one) |
+| 100-Hour | every 100 tach hours |
+| ELT | 12 calendar months (end of that month) |
+| Transponder & Altimeter | 24 calendar months |
+| Static & Pitot System | 24 calendar months |
+| Annual | Dec 31 of the year after the last one |
+| VOR Check | every 30 days (pilots can record this one) |
+
+Current tach = the highest ending tach in the flight log. "Due soon": within 10% of the hours (5 h / 10 h), 30 days for month/annual items, 5 days for the VOR check.
+Admins get a notification when one is due soon; everyone gets one when one is overdue. Overdue items show on Home and at check-out. They do not block check-out (that stays an admin decision through a grounding).
+Admins can edit intervals, correct last-done values, add inspections, or turn one off. Tracking only — the logbooks are the official record.
+
 ## Admin tools
 - More → **Monthly statements**: hours, $50/hr rental and fuel per pilot per month; CSV and Print / Save as PDF.
 - Members and sign-in (or Settings → Members) → **Remove…**: removes a pilot. They're signed out everywhere, their phone, codes and notifications are deleted, and their upcoming bookings are canceled. Past flights and statements keep their name. You can't remove yourself, the owner account, the last admin, or someone with the aircraft checked out.

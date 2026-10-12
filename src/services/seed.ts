@@ -1,6 +1,7 @@
 // Fictional demo data, generated relative to "now" so the demo always looks current.
 import type { AuditEntry, Booking, DbState, FlightRecord, Member } from '../domain/types';
 import { addDays, localToUtc, toLocalParts } from '../domain/time';
+import { defaultInspections } from '../domain/inspections';
 
 export const SCHEMA_VERSION = 3;
 
@@ -87,6 +88,15 @@ export function seedState(nowMs: number, tz = 'America/Los_Angeles'): DbState {
       rateCentsPerHour: 5000, rateBasis: 'hobbs', fuelPolicy: 'pilot_pays_at_pump', topOffRequired: true,
     },
     audit,
+    inspections: defaultInspections().map((i) => {
+      const last: Record<string, [number, number | null]> = {
+        insp_50hr: [-40, 216800], insp_100hr: [-120, 214500], insp_elt: [-355, null], insp_xpdr: [-200, null],
+        insp_pitot: [-200, null], insp_annual: [-300, 216900], insp_vor: [-27, null],
+      };
+      const [d, tach] = last[i.id];
+      const date = addDays(today, d);
+      return { ...i, lastDate: date, lastTach: tach, history: [{ date, tach, notes: 'Demo record', by: 'm1', at: created }] };
+    }),
     savedAt: iso(nowMs),
   };
 }
@@ -106,6 +116,7 @@ export function seedLive(nowMs: number, ownerName = 'G'): DbState {
       rateCentsPerHour: 5000, rateBasis: 'hobbs', fuelPolicy: 'pilot_pays_at_pump', topOffRequired: true,
     },
     audit: [{ id: 'a_start', at, actorId: OWNER_ID, action: 'app.create', entityType: 'settings', summary: 'PlaneShare set up' }],
+    inspections: defaultInspections(),
     savedAt: at,
   };
 }

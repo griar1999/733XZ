@@ -155,3 +155,73 @@ describe('Remove member', () => {
     await expect(api2.removeMember('m2', 'm2', '')).rejects.toThrow(/yourself/);
   });
 });
+
+import { dueInfo, endOfMonthAfter, defaultInspections, inspectionViews, ensureInspections } from '../src/domain/inspections';
+
+describe('Inspections', () => {
+  const base = () => defaultInspections();
+  const get = (id: string) => base().find((i) => i.id === id)!;
+  it('has the seven standard inspections', () => {
+    expect(base().map((i) => i.name)).toEqual(['50-Hour Inspection', '100-Hour Inspection', 'ELT Inspection', 'Transponder & Altimeter', 'Static & Pitot System', 'Annual Inspection', 'VOR Check']);
+  });
+  it('calendar months run to the end of the month', () => {
+    expect(endOfMonthAfter('2026-03-15', 12)).toBe('2027-03-31');
+    expect(endOfMonthAfter('2026-01-31', 24)).toBe('2028-01-31');
+    expect(endOfMonthAfter('2026-11-02', 3)).toBe('2027-02-28');
+  });
+  it('ELT 12 months, transponder 24 months, VOR 30 days, annual Dec 31', () => {
+    const today = '2026-10-10';
+    expect(dueInfo({ ...get('insp_elt'), lastDate: '2025-10-05' }, null, today).nextDate).toBe('2026-10-31');
+    expect(dueInfo({ ...get('insp_elt'), lastDate: '2025-10-05' }, null, today).status).toBe('soon');
+    expect(dueInfo({ ...get('insp_xpdr'), lastDate: '2024-09-20' }, null, today)).toMatchObject({ nextDate: '2026-09-30', status: 'overdue' });
+    expect(dueInfo({ ...get('insp_vor'), lastDate: '2026-09-01' }, null, today)).toMatchObject({ nextDate: '2026-10-01', status: 'overdue' });
+    expect(dueInfo({ ...get('insp_vor'), lastDate: '2026-10-01' }, null, today)).toMatchObject({ nextDate: '2026-10-31', status: 'ok' });
+    expect(dueInfo({ ...get('insp_annual'), lastDate: '2025-12-15' }, null, today)).toMatchObject({ nextDate: '2026-12-31', status: 'ok' });
+  });
+  it('50 and 100 hour run on tach', () => {
+    const d50 = dueInfo({ ...get('insp_50hr'), lastTach: 220000 }, 224600, '2026-10-10');
+    expect(d50).toMatchObject({ nextTach: 225000, tachLeft: 400, status: 'soon' });   // 4.0 h left (< 5 h)
+    const d100 = dueInfo({ ...get('insp_100hr'), lastTach: 210000 }, 220150, '2026-10-10');
+    expect(d100).toMatchObject({ nextTach: 220000, status: 'overdue' });
+    expect(d100.summary).toContain('overdue by 1.5 h');
+    expect(dueInfo({ ...get('insp_100hr'), lastTach: 210000 }, 200000, '2026-10-10', false).status).toBe('no-meter');
+  });
+  it('not set until the last date is entered', () => {
+    expect(dueInfo(get('insp_elt'), null, '2026-10-10').status).toBe('unset');
+  });
+  it('recording: admin only unless pilots can record (VOR); no future dates; tach required for hour-based', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    await expect(api.recordInspection('m2', 'insp_annual', { date: '2026-10-01', tach: null, notes: '' })).rejects.toThrow(/admin/);
+    const vor = await api.recordInspection('m2', 'insp_vor', { date: '2026-10-09', tach: null, notes: 'VOT' });
+    expect(vor.lastDate).toBe('2026-10-09');
+    await expect(api.recordInspection('m1', 'insp_elt', { date: '2026-12-01', tach: null, notes: '' })).rejects.toThrow(/future/);
+    await expect(api.recordInspection('m1', 'insp_100hr', { date: '2026-10-09', tach: null, notes: '' })).rejects.toThrow(/tach/);
+    const h = await api.recordInspection('m1', 'insp_100hr', { date: '2026-10-09', tach: 221470, notes: 'Shop' });
+    expect(h.lastTach).toBe(221470);
+    expect(h.history[0].notes).toBe('Shop');
+    expect(api.snapshot().audit.at(-1)!.action).toBe('inspection.record');
+  });
+  it('admin can change the interval, add and turn off inspections', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    await api.updateInspection('m1', 'insp_vor', { interval: 45 });
+    expect(api.snapshot().inspections.find((i) => i.id === 'insp_vor')!.interval).toBe(45);
+    const oil = await api.addInspection('m1', { name: 'Oil change', kind: 'tach', interval: 50, pilotsCanRecord: false });
+    expect(oil.builtIn).toBe(false);
+    await api.updateInspection('m1', oil.id, { active: false });
+    expect(inspectionViews(api.snapshot(), '2026-10-10').some((v) => v.insp.id === oil.id)).toBe(false);
+    await expect(api.updateInspection('m2', 'insp_vor', { interval: 10 })).rejects.toThrow(/admin/);
+  });
+  it('older saved data gets the standard list', () => {
+    const s = ensureInspections({} as { inspections?: unknown[] } as never);
+    expect((s as { inspections: unknown[] }).inspections).toHaveLength(7);
+  });
+  it('alerts admins when due soon and everyone when overdue, once each', () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    const s = clone(api.snapshot());
+    s.inspections.find((i) => i.id === 'insp_xpdr')!.lastDate = '2024-08-01';  // overdue
+    const r = timedNotices(s, NOW);
+    expect(r.notices.some((n) => /Transponder.*overdue/.test(n.title) && n.to.length === 6)).toBe(true);
+    expect(r.notices.some((n) => /due soon/.test(n.title) && n.to.length === 1)).toBe(true);   // demo VOR / ELT soon
+    expect(timedNotices(s, NOW + 60000).notices.filter((n) => /Transponder/.test(n.title))).toHaveLength(0);
+  });
+});

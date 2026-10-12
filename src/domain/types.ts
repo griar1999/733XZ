@@ -149,11 +149,40 @@ export interface AuditEntry {
   at: string;
   actorId: string;
   action: string;
-  entityType: 'booking' | 'maintenance' | 'issue' | 'restriction' | 'flight' | 'settings' | 'member' | 'demo';
+  entityType: 'booking' | 'maintenance' | 'issue' | 'restriction' | 'flight' | 'settings' | 'member' | 'demo' | 'inspection';
   entityId?: string;
   summary: string;
   before?: unknown;
   after?: unknown;
+}
+
+export type InspectionKind = 'tach' | 'months' | 'days' | 'yearEnd';
+
+export interface InspectionRecord {
+  date: string;          // YYYY-MM-DD, aircraft base time zone
+  tach: number | null;   // hundredths
+  notes: string;
+  by: string;            // member who recorded it
+  at: string;            // when it was recorded (UTC)
+}
+
+/**
+ * A recurring inspection or check. Tracking only: the aircraft logbooks are the official record.
+ * tach: every `interval` tach hours · months: `interval` calendar months (due end of month)
+ * days: every `interval` days · yearEnd: due Dec 31 of the year after the last one
+ */
+export interface Inspection {
+  id: string;
+  name: string;
+  kind: InspectionKind;
+  interval: number;
+  active: boolean;
+  builtIn: boolean;
+  pilotsCanRecord: boolean;
+  lastDate: string | null;
+  lastTach: number | null;
+  history: InspectionRecord[];
+  notified?: 'soon' | 'overdue' | null; // server bookkeeping so each alert goes out once
 }
 
 export interface DbState {
@@ -166,6 +195,7 @@ export interface DbState {
   flights: FlightRecord[];
   settings: AircraftSettings;
   audit: AuditEntry[];
+  inspections: Inspection[];
   savedAt: string;
 }
 

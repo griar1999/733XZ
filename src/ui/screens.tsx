@@ -8,6 +8,7 @@ import type { Booking, FlightRecord } from '../domain/types';
 import { pilotName } from './bookingViews';
 import { issueStatusLabel, urgencyTone } from './recordViews';
 import { InstallCard, PushToggle } from './appShell';
+import { InspectionsSummary, useInspectionViews } from './inspections';
 
 export function AircraftHero({ compact }: { compact?: boolean }) {
   const { db } = useApp();
@@ -55,6 +56,7 @@ export function Home() {
   const nextAny = upcoming.find((b) => Date.parse(b.startUtc) > now);
   const myNext = upcoming.find((b) => b.pilotId === me.id);
   const restrictions = activeRestrictions(db);
+  const inspOver = useInspectionViews().filter((v) => v.due.status === 'overdue');
   const grounded = restrictions.some((r) => r.level === 'grounded');
   const openIssues = db.issues.filter((i) => i.status !== 'resolved');
   const mxUpcoming = db.maintenance.filter((m) => m.status === 'scheduled' && Date.parse(m.endUtc) > now).sort((a, b) => Date.parse(a.startUtc) - Date.parse(b.startUtc));
@@ -90,10 +92,11 @@ export function Home() {
             <p className="status-label">{sched.label}</p>
             <p className="status-detail">{sched.detail}</p>
           </div>
-          <div className={`status-tile tone-${grounded ? 'danger' : restrictions.length ? 'warn' : 'neutral'}`}>
+          <div className={`status-tile tone-${grounded || inspOver.length ? 'danger' : restrictions.length ? 'warn' : 'neutral'}`}>
             <p className="eyebrow">Operational restrictions</p>
             <p className="status-label">{grounded ? 'Grounded' : restrictions.length ? `${restrictions.length} caution${restrictions.length > 1 ? 's' : ''}` : 'None recorded'}</p>
             <p className="status-detail">{grounded ? 'Check-out is blocked until an admin clears it.' : 'Recorded restrictions only. The pilot in command determines airworthiness.'}</p>
+            {inspOver.length > 0 && <p className="status-detail insp-over-line"><strong>{inspOver.length} inspection{inspOver.length > 1 ? 's' : ''} overdue</strong></p>}
           </div>
         </div>
       </div>
@@ -146,6 +149,8 @@ export function Home() {
           </ul>
           {mxUpcoming[0] && <p className="mx-line"><Icon name="wrench" size={18} /> Maintenance {fmtRange(mxUpcoming[0].startUtc, mxUpcoming[0].endUtc, tz)}: {mxUpcoming[0].title}</p>}
         </Section>
+
+        <InspectionsSummary />
 
         <Section title="Meter readings">
           <div className="meters">

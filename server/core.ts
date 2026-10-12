@@ -11,6 +11,7 @@
 import { normalizePhone } from '../src/domain/phones';
 import type { DbState, Member } from '../src/domain/types';
 import { OWNER_ID, SCHEMA_VERSION, seedLive } from '../src/services/seed';
+import { ensureInspections } from '../src/domain/inspections';
 
 // Minimal D1 types (avoids depending on @cloudflare/workers-types)
 export interface D1Result<T = unknown> { results?: T[]; meta?: { changes?: number } }
@@ -122,7 +123,7 @@ export async function loadApp(env: Env): Promise<{ state: DbState; version: numb
   const db = env.DB!;
   const row = await db.prepare('SELECT state, version FROM app WHERE id = 1').first<{ state: string; version: number }>();
   if (row) {
-    const state = JSON.parse(row.state) as DbState;
+    const state = ensureInspections(JSON.parse(row.state) as DbState);
     if (state.schemaVersion !== SCHEMA_VERSION) throw new HttpError(500, 'The saved data is from a different app version. The admin needs to run an upgrade.');
     return { state, version: row.version };
   }

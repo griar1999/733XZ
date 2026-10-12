@@ -110,7 +110,7 @@ export function StatementsScreen() {
 export function ClearDataCard() {
   const { api, me, toast, offline, db } = useApp();
   const [open, setOpen] = useState(false);
-  const [opts, setOpts] = useState({ bookings: true, flights: true, aircraft: true, history: false });
+  const [opts, setOpts] = useState({ bookings: true, flights: true, aircraft: true, inspections: false, history: false });
   const [confirm, setConfirm] = useState('');
   const act = useAction(() => api.clearData(me.id, { ...opts, confirm }));
   if (me.role !== 'admin') return null;
@@ -122,6 +122,7 @@ export function ClearDataCard() {
           <label className="check-row"><input type="checkbox" checked={opts.bookings} onChange={(e) => setOpts({ ...opts, bookings: e.target.checked })} /><span><strong>Bookings</strong> ({db.bookings.length})</span></label>
           <label className="check-row"><input type="checkbox" checked={opts.flights} onChange={(e) => setOpts({ ...opts, flights: e.target.checked })} /><span><strong>Flight records</strong> ({db.flights.length})</span></label>
           <label className="check-row"><input type="checkbox" checked={opts.aircraft} onChange={(e) => setOpts({ ...opts, aircraft: e.target.checked })} /><span><strong>Issues, maintenance and restrictions</strong> ({db.issues.length + db.maintenance.length + db.restrictions.length})</span></label>
+          <label className="check-row"><input type="checkbox" checked={opts.inspections} onChange={(e) => setOpts({ ...opts, inspections: e.target.checked })} /><span><strong>Inspection dates</strong> (last-done dates and history; the list stays)</span></label>
           <label className="check-row"><input type="checkbox" checked={opts.history} onChange={(e) => setOpts({ ...opts, history: e.target.checked })} /><span><strong>Activity history</strong> ({db.audit.length} entries)</span></label>
           <Field id="cd-confirm" label="Type CLEAR to confirm" error={act.error?.details.fieldErrors?.confirm}><input value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="off" autoCapitalize="characters" /></Field>
           {act.error && !act.error.details.fieldErrors && <Banner tone="danger" title={act.error.message} />}
