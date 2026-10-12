@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { HttpApi, auth, type AccountRow, type Me } from '../services/httpApi';
 import { ApiError } from '../services/api';
-import { formatPhone, normalizePhone, parsePhoneList } from '../domain/phones';
+import { formatPhone, normalizePhone } from '../domain/phones';
 import { fmtDateTime } from '../domain/time';
 import { AppProvider, useApp, useAction } from './context';
 import { App } from './App';
@@ -133,7 +133,6 @@ export function AccessScreen() {
   const [rows, setRows] = useState<AccountRow[] | null>(null);
   const [loadErr, setLoadErr] = useState('');
   const [shown, setShown] = useState<{ memberId: string; code: string } | null>(null);
-  const [paste, setPaste] = useState('');
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -159,8 +158,6 @@ export function AccessScreen() {
     return m;
   });
 
-  const parsed = paste.trim() ? parsePhoneList(paste, db.members.filter((m) => !m.removed)) : [];
-  const parsedOk = parsed.filter((p) => p.phone && p.playerId && !p.why);
   const byId = new Map((rows ?? []).map((r) => [r.memberId, r]));
   const origin = typeof location !== 'undefined' ? location.origin : '';
 
@@ -223,17 +220,6 @@ export function AccessScreen() {
         {rows && db.members.filter((m) => !m.removed).length < 2 && <Empty title="Only you so far">Add the other five members above.</Empty>}
       </Section>
 
-      <Section title="Paste a list of phone numbers">
-        <Field id="ac-paste" label="One member per line: Name, phone" hint="Works with a list copied from Contacts, a text, or Excel. Names must match existing members.">
-          <textarea rows={4} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={'Jane Smith, (661) 555-0101\nJohn Lee, 661-555-0102'} />
-        </Field>
-        {parsed.length > 0 && (
-          <ul className="plain">{parsed.map((p, i) => (
-            <li key={i}><Pill tone={p.why ? 'warn' : 'ok'}>{p.why ? 'Check' : 'OK'}</Pill> {p.name || '(no name)'} → {p.phone ? formatPhone(p.phone) : '—'} {p.playerId && `= ${db.members.find((m) => m.id === p.playerId)?.name}`} {p.why && <span className="fine">· {p.why}</span>}</li>
-          ))}</ul>
-        )}
-        {parsed.length > 0 && <Button variant="primary" disabled={!parsedOk.length || offline} pending={busy === 'paste'} onClick={() => doIt('paste', () => auth.setPhones(parsedOk.map((p) => ({ memberId: p.playerId!, phone: p.phone }))), `${parsedOk.length} phone number${parsedOk.length > 1 ? 's' : ''} saved`).then((ok) => { if (ok) setPaste(''); })}>Save {parsedOk.length} number{parsedOk.length === 1 ? '' : 's'}</Button>}
-      </Section>
     </>
   );
 }

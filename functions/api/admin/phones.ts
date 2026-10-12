@@ -1,11 +1,11 @@
 import { handle, HttpError, json, loadApp, readJson, requireSession } from '../../../server/core';
 import { formatPhone, normalizePhone } from '../../../src/domain/phones';
 
-// POST /api/admin/phones { entries: [{ memberId, phone | null }] } → sets (or removes) phone sign-in. Admins only.
+// POST /api/admin/phones { entries: [{ memberId, phone | null }] } → sets (or removes) one member's phone sign-in. Admins only. No bulk imports.
 export const onRequestPost = handle(async ({ request, env }) => {
   await requireSession(request, env, true);
   const { entries } = await readJson<{ entries?: Array<{ memberId?: string; phone?: string | null }> }>(request);
-  if (!Array.isArray(entries) || !entries.length || entries.length > 50) throw new HttpError(400, 'Nothing to save.');
+  if (!Array.isArray(entries) || entries.length !== 1) throw new HttpError(400, 'Add phone numbers one member at a time.');
   const { state } = await loadApp(env);
   const ids = new Set(state.members.filter((m) => !m.removed).map((m) => m.id));
   const nameOf = (id: string) => state.members.find((m) => m.id === id)?.name ?? id;
