@@ -166,15 +166,54 @@ export function Skeleton({ lines = 3 }: { lines?: number }) {
   return <div className="skeleton" aria-busy="true" aria-label="Loading">{Array.from({ length: lines }, (_, i) => <span key={i} style={{ width: `${90 - i * 15}%` }} />)}</div>;
 }
 
-/** Cessna 172 side view (high wing, strut, swept tail, fixed gear). Filled, takes the text color. */
+const FUS = 'M72 238 C82 226 112 220 152 216 L194 170 L294 170 L334 212 L446 204 L468 236 L462 250 L330 298 L192 312 L112 312 C86 308 72 290 72 268 Z';
+/** Our Cessna 172 (orange, lime outline, N733XZ), same drawing as the app icon. */
 export function PlaneIcon({ size = 24 }: { size?: number }) {
+  const cid = React.useId().replace(/:/g, '');
   return (
-    <svg width={size} height={Math.round(size * 240 / 452)} viewBox="28 128 452 240" fill="currentColor" aria-hidden="true">
-      <path fillRule="evenodd" d="M58 246 L66 234 L196 204 L334 204 L376 226 L420 230 C436 233 444 242 444 252 C444 264 436 272 420 274 L340 292 L204 296 L88 268 Z M206 214 L262 212 L262 244 L210 246 Z M272 212 L332 212 L360 232 L272 238 Z M166 226 L198 214 L198 246 L170 248 Z" />
-      <path d="M444 238 C460 241 466 247 466 253 C466 259 460 265 444 268 Z M182 198 L318 184 C338 182 350 186 352 194 C353 201 344 206 330 206 L188 206 C180 206 178 200 182 198 Z M72 244 L54 150 C53 143 57 139 64 139 L92 139 C100 139 104 144 108 151 L162 222 Z M36 245 C36 239 42 237 52 237 L132 239 L132 252 L52 254 C42 254 36 251 36 245 Z" />
-      <rect x="463" y="170" width="10" height="168" rx="5" />
-      <path d="M286 290 L250 208 M296 292 L318 344 M410 276 L410 342" stroke="currentColor" strokeWidth="12" strokeLinecap="round" fill="none" />
-      <circle cx="320" cy="354" r="20" /><circle cx="410" cy="352" r="17" />
+    <svg width={size} height={Math.round(size * 300 / 466)} viewBox="28 74 466 300" aria-hidden="true">
+      <defs><clipPath id={cid}><path d={FUS} /></clipPath></defs>
+
+  <g stroke="#A3E635" strokeWidth="6" strokeLinejoin="round" strokeLinecap="round">
+    {/* horizontal stabilizer (far side, behind) */}
+    <path d="M392 240 C400 232 448 230 482 234 C488 236 488 244 482 246 C448 250 400 250 392 244 Z" fill="#FF9A4D"/>
+    {/* vertical tail */}
+    <path d="M372 208 L436 98 C440 92 446 90 452 90 L478 90 C484 90 486 94 485 100 L470 236 Z" fill="#FF9A4D"/>
+    {/* gear legs */}
+    <path d="M114 306 L112 340 M232 306 L250 340" fill="none"/>
+    {/* fuselage */}
+    <path d={FUS} fill="#FF9A4D" />
+  </g>
+  {/* white belly and stripe, clipped to the fuselage */}
+  <g clipPath={`url(#${cid})`}>
+    <path d="M60 282 C140 296 230 290 320 262 C380 244 430 234 480 226 L480 330 L60 330 Z" fill="#FFFFFF"/>
+    <path d="M60 280 C140 294 230 288 320 260 C380 242 430 232 480 224" fill="none" stroke="#3A2A20" strokeWidth="7"/>
+  </g>
+  <g stroke="#A3E635" strokeWidth="6" strokeLinejoin="round" strokeLinecap="round">
+    <path d={FUS} fill="none" />
+    {/* windows */}
+    <path d="M156 216 L192 178 L200 216 Z" fill="#9FD3F5"/>
+    <path d="M208 182 L252 182 L252 214 L208 216 Z" fill="#9FD3F5"/>
+    <path d="M262 182 L292 182 L318 212 L262 214 Z" fill="#9FD3F5"/>
+    {/* high wing on the roof */}
+    <path d="M176 168 C176 158 186 154 200 154 L300 156 C308 156 312 160 312 166 C312 172 306 174 300 174 L188 176 C180 176 176 173 176 168 Z" fill="#FF9A4D"/>
+    {/* wing strut */}
+    <path d="M214 176 L236 298" fill="none"/>
+    {/* prop */}
+    <ellipse cx="74" cy="262" rx="6" ry="92" fill="#3A2A20"/>
+    {/* spinner */}
+    <path d="M74 246 C54 248 40 254 38 262 C40 270 54 276 74 278 Z" fill="#FFFFFF"/>
+    {/* wheel fairings */}
+    <ellipse cx="114" cy="344" rx="30" ry="15" fill="#FFFFFF"/>
+    <ellipse cx="254" cy="344" rx="34" ry="16" fill="#FFFFFF"/>
+  </g>
+  {/* tires peeking out */}
+  <path d="M100 358 a14 7 0 0 0 28 0 Z M238 359 a16 8 0 0 0 32 0 Z" fill="#3A2A20"/>
+  {/* registration */}
+  <text x="378" y="238" textAnchor="middle" transform="rotate(-6 378 238)" fontFamily="DejaVu Sans, Arial, Helvetica, sans-serif" fontWeight="700" fontSize="23" letterSpacing="1" fill="#3A2A20">N733XZ</text>
+  {/* beacon */}
+  <rect x="460" y="78" width="10" height="12" rx="2" fill="#FF3B30"/>
+  
     </svg>
   );
 }

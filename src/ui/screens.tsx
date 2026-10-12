@@ -17,7 +17,7 @@ export function AircraftHero({ compact }: { compact?: boolean }) {
     <div className={`aircraft ${compact ? 'compact' : ''}`}>
       {s.photoDataUrl
         ? <img src={s.photoDataUrl} alt={`${s.tailNumber} ${s.model}`} className="aircraft-photo" />
-        : <div className="aircraft-photo placeholder" aria-hidden="true"><PlaneIcon size={58} /></div>}
+        : <div className="aircraft-photo placeholder" aria-hidden="true"><PlaneIcon size={84} /></div>}
       <div>
         <p className="tail">{s.tailNumber}</p>
         <p className="model">{s.model || 'Aircraft model not set'}</p>

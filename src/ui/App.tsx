@@ -40,14 +40,14 @@ export function App() {
       </div>}
 
       <aside className="sidebar" aria-label="Main">
-        <div className="brand"><span className="brand-mark" aria-hidden="true"><PlaneIcon size={26} /></span><span><strong>{db.settings.appName}</strong>{!db.settings.tailNumber.toUpperCase().includes(db.settings.appName.toUpperCase()) && <span className="brand-tail">{db.settings.tailNumber}</span>}</span></div>
+        <div className="brand"><span className="brand-mark" aria-hidden="true"><PlaneIcon size={30} /></span><span><strong>{db.settings.appName}</strong>{!db.settings.tailNumber.toUpperCase().includes(db.settings.appName.toUpperCase()) && <span className="brand-tail">{db.settings.tailNumber}</span>}</span></div>
         <nav>{NAV.map((n) => <button key={n.id} className={tab === n.id ? 'on' : ''} aria-current={tab === n.id ? 'page' : undefined} onClick={() => setTab(n.id)}><Icon name={n.icon} /><span>{n.label}</span></button>)}</nav>
         <p className="side-foot fine">Signed in as <strong>{me.name}</strong><br />{me.role === 'admin' ? 'Admin + pilot' : 'Pilot'}</p>
       </aside>
 
       <main className="main" id="main">
         <header className="topbar">
-          <span className="brand-mark" aria-hidden="true"><PlaneIcon size={23} /></span>
+          <span className="brand-mark" aria-hidden="true"><PlaneIcon size={28} /></span>
           <strong>{db.settings.appName}</strong>
           {!db.settings.tailNumber.toUpperCase().includes(db.settings.appName.toUpperCase()) && <span className="brand-tail">{db.settings.tailNumber}</span>}
         </header>
