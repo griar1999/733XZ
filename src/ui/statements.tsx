@@ -145,7 +145,7 @@ export function RemoveMemberButton({ memberId }: { memberId: string }) {
   const upcoming = db.bookings.filter((b) => b.pilotId === m.id && b.status === 'confirmed' && Date.parse(b.endUtc) > now);
   const out = db.bookings.some((b) => b.pilotId === m.id && b.status === 'checked_out');
   const past = db.flights.filter((f) => f.pilotId === m.id && !f.voided).length;
-  if (!open) return <GatedButton variant="ghost" icon="trash" reason={why} onClick={() => setOpen(true)}>Remove…</GatedButton>;
+  if (!open) return <GatedButton type="button" variant="ghost" icon="trash" reason={why} onClick={() => setOpen(true)}>Remove…</GatedButton>;
   return (
     <form className="form confirm-box full" onSubmit={async (e) => { e.preventDefault(); const r = await act.run(); if (r) { toast(r.deleted ? `${m.name} deleted` : `${m.name} removed${r.canceledBookings ? `, ${r.canceledBookings} booking${r.canceledBookings > 1 ? 's' : ''} canceled` : ''}`); setOpen(false); } }}>
       <p className="confirm-title">Remove {m.name}?</p>

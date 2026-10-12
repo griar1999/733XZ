@@ -423,3 +423,7 @@ html, body { overscroll-behavior-y: none; }
 .access-remove { flex-basis: 100%; }
 .access-remove:empty { display: none; }
 .member-row .full .gated { align-items: flex-start; }
+.member-card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.member-card > .member-row { border: 0; background: none; }
+.member-remove { padding: 0 12px 12px; }
+.member-remove:empty { display: none; }
