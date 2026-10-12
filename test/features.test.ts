@@ -112,3 +112,35 @@ describe('Clear test data', () => {
     expect(s.bookings.length + s.flights.length + s.issues.length).toBe(0);
   });
 });
+
+describe('Remove member', () => {
+  it('removes a pilot, cancels their upcoming bookings, keeps their history', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    await expect(api.removeMember('m2', 'm3', '')).rejects.toThrow(/admin/);
+    await expect(api.removeMember('m1', 'm1', '')).rejects.toThrow(/yourself/);
+    const r = await api.removeMember('m1', 'm3', 'Left the group');
+    expect(r.canceledBookings).toBe(1);                      // b7 tomorrow
+    const s = api.snapshot();
+    const jordan = s.members.find((m) => m.id === 'm3')!;
+    expect(jordan.removed).toBe(true);
+    expect(jordan.active).toBe(false);
+    expect(s.bookings.find((b) => b.id === 'b7')!.status).toBe('canceled');
+    expect(s.flights.filter((f) => f.pilotId === 'm3')).toHaveLength(2);   // history kept
+    expect(monthlyStatement(s, '2026-10').rows.some((r) => r.name === 'Jordan Kim')).toBe(true);
+    await expect(api.createBooking('m3', { pilotId: 'm3', startUtc: L(9, '09:00'), endUtc: L(9, '10:00'), destination: '', notes: '' })).rejects.toThrow(/not active/);
+    await expect(api.removeMember('m1', 'm3', '')).rejects.toThrow(/not found/);
+    // the name can be used again for a new member
+    const again = await api.addMember('m1', 'Jordan Kim', 'pilot');
+    expect(again.id).not.toBe('m3');
+  });
+  it('blocks removing someone who has the aircraft out, and the last admin', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    await api.updateMember('m1', 'm2', { role: 'admin' });
+    await expect(api.removeMember('m2', 'm1', '')).rejects.toThrow(/checked out/);   // m1 has b6 out
+    const api2 = new MockApi({ storage: mem(), now: () => NOW });
+    await api2.updateMember('m1', 'm2', { role: 'admin' });
+    await api2.returnAircraft('m1', 'b6', { note: '', fuelToppedOff: true });
+    await api2.removeMember('m2', 'm1', '');
+    await expect(api2.removeMember('m2', 'm2', '')).rejects.toThrow(/yourself/);
+  });
+});

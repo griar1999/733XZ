@@ -7,7 +7,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
   const { entries } = await readJson<{ entries?: Array<{ memberId?: string; phone?: string | null }> }>(request);
   if (!Array.isArray(entries) || !entries.length || entries.length > 50) throw new HttpError(400, 'Nothing to save.');
   const { state } = await loadApp(env);
-  const ids = new Set(state.members.map((m) => m.id));
+  const ids = new Set(state.members.filter((m) => !m.removed).map((m) => m.id));
   const nameOf = (id: string) => state.members.find((m) => m.id === id)?.name ?? id;
   const clean: Array<{ memberId: string; phone: string | null }> = [];
   const used = new Map<string, string>();

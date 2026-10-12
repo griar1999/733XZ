@@ -420,3 +420,6 @@ html, body { overscroll-behavior-y: none; }
 .stmt-table { display: none; }
 @media (min-width: 720px) { .stmt-cards { display: none; } .stmt-table { display: block; } }
 @media print { .stmt-cards { display: none !important; } .stmt-table { display: block !important; } }
+.access-remove { flex-basis: 100%; }
+.access-remove:empty { display: none; }
+.member-row .full .gated { align-items: flex-start; }

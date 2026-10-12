@@ -225,7 +225,7 @@ export function FlightLog() {
       </div>
       <p className="fine log-disclaimer">Operational usage records for scheduling and cost sharing. Not a replacement for pilot or aircraft logbooks. Hobbs, tach, and regulatory flight time are not interchangeable.</p>
       <div className="filters">
-        {isAdmin && <label>Pilot<select value={pilot} onChange={(e) => setPilot(e.target.value)}><option value="all">All pilots</option>{db.members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></label>}
+        {isAdmin && <label>Pilot<select value={pilot} onChange={(e) => setPilot(e.target.value)}><option value="all">All pilots</option>{db.members.filter((m) => !m.removed || db.flights.some((f) => f.pilotId === m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}{m.removed ? ' (removed)' : ''}</option>)}</select></label>}
         <label>From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
         <label>To<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
         {(from || to || (isAdmin && pilot !== 'all')) && <button className="link" onClick={() => { setFrom(''); setTo(''); setPilot(isAdmin ? 'all' : me.id); }}>Clear filters</button>}

@@ -5,7 +5,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
   const me = await requireSession(request, env, true);
   const { memberId } = await readJson<{ memberId?: string }>(request);
   const { state } = await loadApp(env);
-  const m = state.members.find((x) => x.id === memberId);
+  const m = state.members.find((x) => x.id === memberId && !x.removed);
   if (!m) throw new HttpError(404, 'Member not found.');
   const db = env.DB!;
   const code = newCode();

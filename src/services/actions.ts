@@ -334,7 +334,7 @@ export const ACTIONS: Record<string, ActionDef> = {
   updateMember: def((db, actorId, now, [rawId, rawPatch]) => {
     requireAdmin(db, actorId);
     const m = db.members.find((x) => x.id === str(rawId, 40));
-    if (!m) throw new ApiError('not_found', 'Member not found.');
+    if (!m || m.removed) throw new ApiError('not_found', 'Member not found.');
     const p = (rawPatch ?? {}) as Record<string, unknown>;
     const next: Member = { ...m };
     if ('name' in p) next.name = str(p.name, 60);
@@ -372,11 +372,37 @@ export const ACTIONS: Record<string, ActionDef> = {
     return { cleared: counts };
   }),
 
+  /**
+   * Admin: remove a member. They can no longer sign in and disappear from member lists.
+   * Their future bookings are canceled (and recorded). Past bookings, flight records and
+   * statements keep their name. The server also deletes their phone, codes, sessions and notifications.
+   */
+  removeMember: def((db, actorId, now, [rawId, rawReason]) => {
+    const who = requireAdmin(db, actorId);
+    const m = db.members.find((x) => x.id === str(rawId, 40));
+    if (!m || m.removed) throw new ApiError('not_found', 'Member not found.');
+    if (m.id === who.id) throw new ApiError('validation', "You can't remove yourself. Ask another admin.");
+    if (m.id === 'owner') throw new ApiError('validation', 'The owner account is used by the admin code and cannot be removed.');
+    if (m.role === 'admin' && !db.members.some((x) => x.id !== m.id && !x.removed && x.active && x.role === 'admin')) throw new ApiError('validation', 'Keep at least one active admin.');
+    const out = db.bookings.find((b) => b.pilotId === m.id && b.status === 'checked_out');
+    if (out) throw new ApiError('validation', `${m.name} has the aircraft checked out. Return it first, then remove them.`);
+    const at = iso(now);
+    const reason = str(rawReason, 200).trim();
+    const future = db.bookings.filter((b) => b.pilotId === m.id && b.status === 'confirmed' && Date.parse(b.endUtc) > now);
+    for (const b of future) {
+      Object.assign(b, { status: 'canceled', canceledAt: at, canceledBy: actorId, cancelReason: `${m.name} was removed from the group`, version: b.version + 1, updatedAt: at });
+      audit(db, now, { actorId, action: 'booking.cancel', entityType: 'booking', entityId: b.id, summary: `Canceled ${m.name}'s reservation: member removed` });
+    }
+    Object.assign(m, { active: false, removed: true, removedAt: at, removedBy: actorId, email: '' });
+    audit(db, now, { actorId, action: 'member.remove', entityType: 'member', entityId: m.id, summary: `Removed ${m.name} from the group${future.length ? ` (${future.length} upcoming booking${future.length > 1 ? 's' : ''} canceled)` : ''}${reason ? ': ' + reason : ''}` });
+    return { removed: m.id, canceledBookings: future.length };
+  }),
+
   addMember: def((db, actorId, now, [rawName, rawRole]) => {
     requireAdmin(db, actorId);
     const nm = str(rawName, 60).trim().replace(/\s+/g, ' ');
     if (!nm) throw new ApiError('validation', 'Enter the member\'s name.', { fieldErrors: { name: 'Name is required.' } });
-    if (db.members.some((m) => m.name.toLowerCase() === nm.toLowerCase())) throw new ApiError('validation', `${nm} is already a member.`, { fieldErrors: { name: 'Already a member.' } });
+    if (db.members.some((m) => !m.removed && m.name.toLowerCase() === nm.toLowerCase())) throw new ApiError('validation', `${nm} is already a member.`, { fieldErrors: { name: 'Already a member.' } });
     if (db.members.filter((m) => m.active).length >= 20) throw new ApiError('validation', 'This group already has 20 active members.');
     const m: Member = { id: newId('m'), name: nm, initials: initialsOf(nm), role: rawRole === 'admin' ? 'admin' : 'pilot', active: true, email: '' };
     db.members.push(m);

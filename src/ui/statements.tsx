@@ -131,3 +131,33 @@ export function ClearDataCard() {
     </Section>
   );
 }
+
+/** Admin: remove a member from the group (with confirmation). */
+export function RemoveMemberButton({ memberId }: { memberId: string }) {
+  const { api, db, me, toast, offline, now, tz } = useApp();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const act = useAction(() => api.removeMember(me.id, memberId, reason));
+  const m = db.members.find((x) => x.id === memberId);
+  if (!m || m.removed || me.role !== 'admin') return null;
+  if (m.id === me.id || m.id === 'owner') return null; // you can't remove yourself or the owner account
+  const why = offline ? 'You are offline.' : null;
+  const upcoming = db.bookings.filter((b) => b.pilotId === m.id && b.status === 'confirmed' && Date.parse(b.endUtc) > now);
+  const out = db.bookings.some((b) => b.pilotId === m.id && b.status === 'checked_out');
+  const past = db.flights.filter((f) => f.pilotId === m.id && !f.voided).length;
+  if (!open) return <GatedButton variant="ghost" icon="trash" reason={why} onClick={() => setOpen(true)}>Remove…</GatedButton>;
+  return (
+    <form className="form confirm-box full" onSubmit={async (e) => { e.preventDefault(); const r = await act.run(); if (r) { toast(`${m.name} removed${r.canceledBookings ? `, ${r.canceledBookings} booking${r.canceledBookings > 1 ? 's' : ''} canceled` : ''}`); setOpen(false); } }}>
+      <p className="confirm-title">Remove {m.name}?</p>
+      <ul className="plain bullets fine">
+        <li>They can't sign in anymore, and their phone number, codes and notifications are deleted.</li>
+        <li>{upcoming.length ? `${upcoming.length} upcoming booking${upcoming.length > 1 ? 's' : ''} will be canceled and the time opened up (${upcoming.map((b) => new Date(b.startUtc).toLocaleDateString('en-US', { timeZone: tz, month: 'short', day: 'numeric' })).join(', ')}).` : 'They have no upcoming bookings.'}</li>
+        <li>{past ? `Their ${past} past flight record${past > 1 ? 's' : ''} and statements stay, under their name.` : 'Past bookings and activity stay, under their name.'}</li>
+      </ul>
+      {out && <Banner tone="warn" title={`${m.name} has the aircraft checked out. Return it before removing them.`} />}
+      <Field id={`rm-${m.id}`} label="Reason (optional)"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Left the group" /></Field>
+      {act.error && <Banner tone="danger" title={act.error.message} />}
+      <div className="btn-row"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Keep {m.name.split(' ')[0]}</Button><Button type="submit" variant="danger" pending={act.pending} disabled={out}>Remove member</Button></div>
+    </form>
+  );
+}

@@ -11,6 +11,10 @@ export interface Member {
   role: Role;
   active: boolean;
   email: string; // display only in demo; future invite target
+  // Removed members stay in the data so past bookings, flights and statements keep their name.
+  removed?: boolean;
+  removedAt?: string;
+  removedBy?: string;
 }
 
 export type BookingStatus = 'confirmed' | 'checked_out' | 'completed' | 'canceled' | 'no_show';

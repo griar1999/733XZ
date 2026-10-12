@@ -13,7 +13,7 @@ import type { MorePage } from './context';
 export const demoPages: { DemoTools?: React.FC; Plan?: React.FC } = {};
 import { AccessScreen, AccountCard } from './live';
 import { InstallCard } from './appShell';
-import { ClearDataCard, StatementsScreen } from './statements';
+import { ClearDataCard, RemoveMemberButton, StatementsScreen } from './statements';
 
 export function MoreScreen() {
   const { more, setMore, me, live } = useApp();
@@ -251,7 +251,7 @@ function Settings() {
       </form>
       <Section title="Members">
         <p className="fine">{live ? 'Membership is invite-only. Add members and their phone numbers in More → Members and sign-in.' : 'Production membership is invite-only: an admin sends an invite, the member signs in, and there is no public sign-up.'}</p>
-        <div className="stack">{db.members.map((m) => <MemberRow key={m.id} m={m} />)}</div>
+        <div className="stack">{db.members.filter((m) => !m.removed).map((m) => <MemberRow key={m.id} m={m} />)}</div>
         {live
           ? (isAdmin && <Button icon="plus" onClick={() => setMore('access')}>Add member</Button>)
           : <GatedButton icon="plus" reason="The demo uses six fixed simulated members. The live app adds members under Members and sign-in.">Invite member</GatedButton>}
@@ -277,6 +277,7 @@ function MemberRow({ m }: { m: Member }) {
       <label className="switch small"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={!isAdmin} /> Active</label>
       {isAdmin && <Button type="submit" disabled={!dirty} pending={act.pending}>Save</Button>}
       {act.error && <p className="field-error full">{act.error.message}</p>}
+      {isAdmin && <div className="full"><RemoveMemberButton memberId={m.id} /></div>}
     </form>
   );
 }

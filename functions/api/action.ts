@@ -20,6 +20,15 @@ export const onRequestPost = handle(async ({ request, env, waitUntil }) => {
       return r;
     });
     if (name === 'clearData') await deleteOrphanPhotos(env, out.state);
+    if (name === 'removeMember') {
+      const id = (out.result as { removed: string }).removed;
+      await env.DB!.batch([
+        env.DB!.prepare('DELETE FROM phones WHERE member_id = ?').bind(id),
+        env.DB!.prepare('DELETE FROM sessions WHERE member_id = ?').bind(id),
+        env.DB!.prepare('DELETE FROM accounts WHERE member_id = ?').bind(id),
+        env.DB!.prepare('DELETE FROM push_subs WHERE member_id = ?').bind(id),
+      ]);
+    }
     // phone notifications go out after the reply is sent
     const later = (async () => {
       await pushNotices(env, notices);

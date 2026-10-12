@@ -8,6 +8,7 @@ import { AppProvider, useApp, useAction } from './context';
 import { App } from './App';
 import { Avatar, Banner, Button, Empty, Field, Icon, Pill, Section, Skeleton } from './components';
 import { PushToggle } from './appShell';
+import { RemoveMemberButton } from './statements';
 import { disablePush } from '../services/pushClient';
 
 type AuthState = { status: 'loading' } | { status: 'signedOut'; error?: string } | { status: 'signedIn'; me: Me };
@@ -158,7 +159,7 @@ export function AccessScreen() {
     return m;
   });
 
-  const parsed = paste.trim() ? parsePhoneList(paste, db.members) : [];
+  const parsed = paste.trim() ? parsePhoneList(paste, db.members.filter((m) => !m.removed)) : [];
   const parsedOk = parsed.filter((p) => p.phone && p.playerId && !p.why);
   const byId = new Map((rows ?? []).map((r) => [r.memberId, r]));
   const origin = typeof location !== 'undefined' ? location.origin : '';
@@ -197,7 +198,7 @@ export function AccessScreen() {
         {!rows && !loadErr && <Skeleton lines={4} />}
         {rows && (
           <div className="stack">
-            {db.members.map((m) => {
+            {db.members.filter((m) => !m.removed).map((m) => {
               const r = byId.get(m.id);
               return (
                 <div key={m.id} className="access-row">
@@ -213,12 +214,13 @@ export function AccessScreen() {
                       ? <><Button variant="danger" pending={busy === 'rev' + m.id} onClick={() => doIt('rev' + m.id, () => auth.revoke(m.id), `${m.name} signed out everywhere`).then(() => setConfirmRevoke(null))}>Turn off sign-in</Button><Button variant="ghost" onClick={() => setConfirmRevoke(null)}>Keep</Button></>
                       : <Button variant="ghost" disabled={offline} onClick={() => setConfirmRevoke(m.id)}>Turn off…</Button>)}
                   </div>
+                  <div className="access-remove"><RemoveMemberButton memberId={m.id} /></div>
                 </div>
               );
             })}
           </div>
         )}
-        {rows && db.members.length < 2 && <Empty title="Only you so far">Add the other five members above.</Empty>}
+        {rows && db.members.filter((m) => !m.removed).length < 2 && <Empty title="Only you so far">Add the other five members above.</Empty>}
       </Section>
 
       <Section title="Paste a list of phone numbers">
