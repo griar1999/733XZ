@@ -49,7 +49,7 @@ export interface PlaneShareApi {
   updateSettings(actorId: string, patch: Partial<AircraftSettings>): Promise<AircraftSettings>;
   updateMember(actorId: string, id: string, patch: Partial<Pick<Member, 'name' | 'role' | 'active' | 'email'>>): Promise<Member>;
   addMember(actorId: string, name: string, role: Member['role']): Promise<Member>;
-  removeMember(actorId: string, id: string, reason: string): Promise<{ removed: string; canceledBookings: number }>;
+  removeMember(actorId: string, id: string, reason: string): Promise<{ removed: string; canceledBookings: number; deleted: boolean }>;
   clearData(actorId: string, opts: { bookings: boolean; flights: boolean; aircraft: boolean; history: boolean; confirm: string }): Promise<{ cleared: string[] }>;
   resetDemo(): Promise<void>;
 }
@@ -74,7 +74,7 @@ export function actionMethods(run: <T>(name: string, actorId: string, args: unkn
     updateSettings: (a: string, patch: Partial<AircraftSettings>) => run<AircraftSettings>('updateSettings', a, [patch]),
     updateMember: (a: string, id: string, patch: Partial<Pick<Member, 'name' | 'role' | 'active' | 'email'>>) => run<Member>('updateMember', a, [id, patch]),
     addMember: (a: string, name: string, role: Member['role']) => run<Member>('addMember', a, [name, role]),
-    removeMember: (a: string, id: string, reason: string) => run<{ removed: string; canceledBookings: number }>('removeMember', a, [id, reason]),
+    removeMember: (a: string, id: string, reason: string) => run<{ removed: string; canceledBookings: number; deleted: boolean }>('removeMember', a, [id, reason]),
     clearData: (a: string, opts: { bookings: boolean; flights: boolean; aircraft: boolean; history: boolean; confirm: string }) => run<{ cleared: string[] }>('clearData', a, [opts]),
   };
 }

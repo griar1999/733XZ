@@ -147,12 +147,12 @@ export function RemoveMemberButton({ memberId }: { memberId: string }) {
   const past = db.flights.filter((f) => f.pilotId === m.id && !f.voided).length;
   if (!open) return <GatedButton variant="ghost" icon="trash" reason={why} onClick={() => setOpen(true)}>Remove…</GatedButton>;
   return (
-    <form className="form confirm-box full" onSubmit={async (e) => { e.preventDefault(); const r = await act.run(); if (r) { toast(`${m.name} removed${r.canceledBookings ? `, ${r.canceledBookings} booking${r.canceledBookings > 1 ? 's' : ''} canceled` : ''}`); setOpen(false); } }}>
+    <form className="form confirm-box full" onSubmit={async (e) => { e.preventDefault(); const r = await act.run(); if (r) { toast(r.deleted ? `${m.name} deleted` : `${m.name} removed${r.canceledBookings ? `, ${r.canceledBookings} booking${r.canceledBookings > 1 ? 's' : ''} canceled` : ''}`); setOpen(false); } }}>
       <p className="confirm-title">Remove {m.name}?</p>
       <ul className="plain bullets fine">
         <li>They can't sign in anymore, and their phone number, codes and notifications are deleted.</li>
         <li>{upcoming.length ? `${upcoming.length} upcoming booking${upcoming.length > 1 ? 's' : ''} will be canceled and the time opened up (${upcoming.map((b) => new Date(b.startUtc).toLocaleDateString('en-US', { timeZone: tz, month: 'short', day: 'numeric' })).join(', ')}).` : 'They have no upcoming bookings.'}</li>
-        <li>{past ? `Their ${past} past flight record${past > 1 ? 's' : ''} and statements stay, under their name.` : 'Past bookings and activity stay, under their name.'}</li>
+        <li>{past ? `They have ${past} past flight record${past > 1 ? 's' : ''}. Those stay in statements under their name; everything else about them is removed.` : 'They have no flight history, so they are deleted completely.'}</li>
       </ul>
       {out && <Banner tone="warn" title={`${m.name} has the aircraft checked out. Return it before removing them.`} />}
       <Field id={`rm-${m.id}`} label="Reason (optional)"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Left the group" /></Field>

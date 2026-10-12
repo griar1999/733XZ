@@ -119,7 +119,8 @@ describe('Remove member', () => {
     await expect(api.removeMember('m2', 'm3', '')).rejects.toThrow(/admin/);
     await expect(api.removeMember('m1', 'm1', '')).rejects.toThrow(/yourself/);
     const r = await api.removeMember('m1', 'm3', 'Left the group');
-    expect(r.canceledBookings).toBe(1);                      // b7 tomorrow
+    expect(r.canceledBookings).toBe(1);
+    expect(r.deleted).toBe(false);                      // b7 tomorrow
     const s = api.snapshot();
     const jordan = s.members.find((m) => m.id === 'm3')!;
     expect(jordan.removed).toBe(true);
@@ -132,6 +133,16 @@ describe('Remove member', () => {
     // the name can be used again for a new member
     const again = await api.addMember('m1', 'Jordan Kim', 'pilot');
     expect(again.id).not.toBe('m3');
+  });
+  it('deletes a pilot completely when they have no flight history', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    const n = await api.addMember('m1', 'New Guy', 'pilot');
+    await api.createBooking('m1', { pilotId: n.id, startUtc: L(10, '09:00'), endUtc: L(10, '10:00'), destination: '', notes: '' });
+    const r = await api.removeMember('m1', n.id, '');
+    expect(r.deleted).toBe(true);
+    const s = api.snapshot();
+    expect(s.members.some((m) => m.id === n.id)).toBe(false);
+    expect(s.bookings.some((b) => b.pilotId === n.id)).toBe(false);
   });
   it('blocks removing someone who has the aircraft out, and the last admin', async () => {
     const api = new MockApi({ storage: mem(), now: () => NOW });

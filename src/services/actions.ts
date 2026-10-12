@@ -393,9 +393,17 @@ export const ACTIONS: Record<string, ActionDef> = {
       Object.assign(b, { status: 'canceled', canceledAt: at, canceledBy: actorId, cancelReason: `${m.name} was removed from the group`, version: b.version + 1, updatedAt: at });
       audit(db, now, { actorId, action: 'booking.cancel', entityType: 'booking', entityId: b.id, summary: `Canceled ${m.name}'s reservation: member removed` });
     }
-    Object.assign(m, { active: false, removed: true, removedAt: at, removedBy: actorId, email: '' });
-    audit(db, now, { actorId, action: 'member.remove', entityType: 'member', entityId: m.id, summary: `Removed ${m.name} from the group${future.length ? ` (${future.length} upcoming booking${future.length > 1 ? 's' : ''} canceled)` : ''}${reason ? ': ' + reason : ''}` });
-    return { removed: m.id, canceledBookings: future.length };
+    // No flight history → delete them completely, with their bookings.
+    // Flight history → keep only a hidden name so past flights and statements still add up.
+    const hasHistory = db.flights.some((f) => f.pilotId === m.id) || db.bookings.some((b) => b.pilotId === m.id && (b.status === 'completed' || b.status === 'checked_out'));
+    if (hasHistory) {
+      Object.assign(m, { active: false, removed: true, removedAt: at, removedBy: actorId, email: '', role: 'pilot' });
+    } else {
+      db.bookings = db.bookings.filter((b) => b.pilotId !== m.id);
+      db.members = db.members.filter((x) => x.id !== m.id);
+    }
+    audit(db, now, { actorId, action: 'member.remove', entityType: 'member', entityId: m.id, summary: `Removed ${m.name} from the group${hasHistory ? (future.length ? ` (${future.length} upcoming booking${future.length > 1 ? 's' : ''} canceled; past flights kept)` : ' (past flights kept)') : ' and deleted their record'}${reason ? ': ' + reason : ''}` });
+    return { removed: m.id, canceledBookings: future.length, deleted: !hasHistory };
   }),
 
   addMember: def((db, actorId, now, [rawName, rawRole]) => {
