@@ -1,6 +1,7 @@
 // Web-app behavior: pull down to refresh, and the "install this app" card.
 import React, { useEffect, useRef, useState } from 'react';
 import { isStandalone } from '../services/buildMode';
+import { disablePush, enablePush, pushState, type PushState } from '../services/pushClient';
 import { useApp } from './context';
 import { Button, Icon } from './components';
 
@@ -127,6 +128,49 @@ export function InstallCard({ force }: { force?: boolean }) {
           {deferred && <Button variant="primary" onClick={async () => { const d = deferred!; deferred = null; await d.prompt(); await d.userChoice.catch(() => undefined); bump((x) => x + 1); }}>Install app</Button>}
           {!deferred && <Button onClick={() => { setTab('more'); setMore('install'); }}>Show me how</Button>}
           {!force && <Button variant="ghost" onClick={dismiss}>Not now</Button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Phone notifications ----------------
+const PUSH_DISMISS = 'planeshare.push.dismissed';
+
+/** Turn phone notifications on/off. `prompt` = the Home nudge, hidden once on or dismissed. */
+export function PushToggle({ prompt = false }: { prompt?: boolean }) {
+  const { toast } = useApp();
+  const [st, setSt] = useState<PushState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [hidden, setHidden] = useState(() => { try { return prompt && localStorage.getItem(PUSH_DISMISS) === '1'; } catch { return false; } });
+  useEffect(() => { void pushState().then(setSt); }, []);
+  if (!st || hidden) return null;
+  if (prompt && (st === 'on' || st === 'unsupported' || st === 'blocked' || st === 'needs-install')) return null;
+
+  const turnOn = async () => {
+    setBusy(true);
+    try { await enablePush(); setSt('on'); toast('Notifications are on. A test one is on its way.'); }
+    catch (e) { toast((e as Error).message, 'error'); setSt(await pushState()); }
+    finally { setBusy(false); }
+  };
+  const turnOff = async () => {
+    setBusy(true);
+    try { await disablePush(); setSt('off'); toast('Notifications are off on this phone.'); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="install-card" role="region" aria-label="Phone notifications">
+      <Icon name="bell" />
+      <div className="grow">
+        {st === 'on' && <><p><strong>Notifications are on</strong></p><p className="fine">New bookings, cancellations, changes, groundings, maintenance, your booking reminders and overdue returns.</p></>}
+        {st === 'off' && <><p><strong>Get notified on your phone</strong></p><p className="fine">When someone books or cancels, the aircraft is grounded, or your booking is coming up.</p></>}
+        {st === 'needs-install' && <><p><strong>Notifications on iPhone</strong></p><p className="fine">First add PlaneShare to your Home Screen (Share → Add to Home Screen). Open it from the icon, then turn notifications on here.</p></>}
+        {st === 'blocked' && <><p><strong>Notifications are blocked</strong></p><p className="fine">Allow notifications for PlaneShare in your phone or browser settings, then come back.</p></>}
+        {st === 'unsupported' && <><p><strong>No notifications in this browser</strong></p><p className="fine">Use Safari on iPhone (from the Home Screen icon) or Chrome.</p></>}
+        <div className="btn-row">
+          {st === 'off' && <Button variant="primary" pending={busy} onClick={turnOn}>Turn on</Button>}
+          {st === 'on' && !prompt && <Button pending={busy} onClick={turnOff}>Turn off on this phone</Button>}
+          {prompt && <Button variant="ghost" onClick={() => { setHidden(true); try { localStorage.setItem(PUSH_DISMISS, '1'); } catch { /* ignore */ } }}>Not now</Button>}
         </div>
       </div>
     </div>

@@ -350,6 +350,28 @@ export const ACTIONS: Record<string, ActionDef> = {
     return m;
   }),
 
+  /**
+   * Admin: remove setup/test records. Keeps members, sign-in, settings and the aircraft photo.
+   * The confirmation word must be typed exactly. Nothing else can undo this except a backup.
+   */
+  clearData: def((db, actorId, now, [rawOpts]) => {
+    requireAdmin(db, actorId);
+    const o = (rawOpts ?? {}) as Record<string, unknown>;
+    if (o.confirm !== 'CLEAR') throw new ApiError('validation', 'Type CLEAR to confirm.', { fieldErrors: { confirm: 'Type CLEAR in capitals.' } });
+    const what = { bookings: o.bookings === true, flights: o.flights === true, aircraft: o.aircraft === true, history: o.history === true };
+    if (!what.bookings && !what.flights && !what.aircraft && !what.history) throw new ApiError('validation', 'Choose at least one thing to clear.');
+    const counts: string[] = [];
+    if (what.bookings) { counts.push(`${db.bookings.length} booking(s)`); db.bookings = []; }
+    if (what.flights) { counts.push(`${db.flights.length} flight record(s)`); db.flights = []; }
+    if (what.aircraft) {
+      counts.push(`${db.issues.length} issue(s), ${db.maintenance.length} maintenance block(s), ${db.restrictions.length} restriction(s)`);
+      db.issues = []; db.maintenance = []; db.restrictions = [];
+    }
+    if (what.history) db.audit = [];
+    audit(db, now, { actorId, action: 'data.clear', entityType: 'settings', summary: `Cleared test data: ${counts.join('; ') || 'activity history'}${what.history && counts.length ? '; activity history' : ''}` });
+    return { cleared: counts };
+  }),
+
   addMember: def((db, actorId, now, [rawName, rawRole]) => {
     requireAdmin(db, actorId);
     const nm = str(rawName, 60).trim().replace(/\s+/g, ' ');

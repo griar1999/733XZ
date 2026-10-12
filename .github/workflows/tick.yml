@@ -1,0 +1,13 @@
+# Every 15 minutes: ask the site to send due booking reminders and overdue-return notices.
+# Cloudflare Pages has no built-in timer, so this is the clock. Safe to run any time.
+name: Reminders
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: curl -fsS -X POST https://733xz.riarinc.com/api/tick

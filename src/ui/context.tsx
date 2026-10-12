@@ -5,7 +5,7 @@ import type { HttpApi, Me } from '../services/httpApi';
 import { reloadIfNewVersion } from '../services/buildMode';
 
 export type Tab = 'home' | 'calendar' | 'bookings' | 'log' | 'more';
-export type MorePage = 'menu' | 'aircraft' | 'activity' | 'settings' | 'access' | 'install' | 'demo' | 'plan';
+export type MorePage = 'menu' | 'aircraft' | 'activity' | 'statements' | 'settings' | 'access' | 'install' | 'demo' | 'plan';
 
 export type ModalState =
   | { kind: 'booking'; booking?: Booking; prefill?: { startUtc: string; endUtc: string } }
@@ -61,7 +61,18 @@ export function AppProvider({ api, liveMe, onSignOut, children }: { api: PlaneSh
   const db = useSyncExternalStore((fn) => api.subscribe(fn), () => api.snapshot());
   const offline = useSyncExternalStore((fn) => api.subscribe(fn), () => api.isOffline());
   const [meId, setMeId] = useState(() => safeGet('planeshare.me') ?? 'm1');
-  const [tab, setTabState] = useState<Tab>(() => (safeGet('planeshare.tab') as Tab) || 'home');
+  const TABS: Tab[] = ['home', 'calendar', 'bookings', 'log', 'more'];
+  const hashTab = () => { const h = (typeof location !== 'undefined' ? location.hash.replace('#', '') : '') as Tab; return TABS.includes(h) ? h : null; };
+  const [tab, setTabState] = useState<Tab>(() => hashTab() ?? ((safeGet('planeshare.tab') as Tab) || 'home'));
+  // a tapped notification opens /#calendar, /#log, etc.
+  useEffect(() => {
+    const f = () => { const h = hashTab(); if (h) { setTabState(h); if (h === 'more') setMore('menu'); history.replaceState(null, '', location.pathname); } };
+    f();
+    window.addEventListener('hashchange', f);
+    const onMsg = (e: MessageEvent) => { if (e.data?.type === 'open' && typeof e.data.url === 'string') { location.href = e.data.url; } };
+    navigator.serviceWorker?.addEventListener('message', onMsg);
+    return () => { window.removeEventListener('hashchange', f); navigator.serviceWorker?.removeEventListener('message', onMsg); };
+  }, []);
   const [more, setMore] = useState<MorePage>('menu');
   const [modal, setModal] = useState<ModalState>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);

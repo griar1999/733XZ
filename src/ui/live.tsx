@@ -7,6 +7,8 @@ import { fmtDateTime } from '../domain/time';
 import { AppProvider, useApp, useAction } from './context';
 import { App } from './App';
 import { Avatar, Banner, Button, Empty, Field, Icon, Pill, Section, Skeleton } from './components';
+import { PushToggle } from './appShell';
+import { disablePush } from '../services/pushClient';
 
 type AuthState = { status: 'loading' } | { status: 'signedOut'; error?: string } | { status: 'signedIn'; me: Me };
 
@@ -47,6 +49,8 @@ export function LiveRoot({ api }: { api: HttpApi }) {
   }, [api, load]);
 
   const signOut = useCallback(async () => {
+    // this phone stops getting the signed-out member's notifications
+    try { await disablePush(); } catch { /* ignore */ }
     try { await auth.logout(); } catch { /* ignore */ }
     api.clear();
     try { localStorage.removeItem('planeshare.live.me'); } catch { /* ignore */ }
@@ -256,6 +260,7 @@ export function AccountCard() {
         <div className="access-main"><p><strong>{me.name}</strong></p><p className="fine">{me.role === 'admin' ? 'Admin + pilot' : 'Pilot'} · {db.settings.appName}</p></div>
         <Button pending={busy} onClick={async () => { setBusy(true); await signOut(); }}>Sign out</Button>
       </div>
+      <PushToggle />
     </Section>
   );
 }

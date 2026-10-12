@@ -26,6 +26,10 @@ const paths: Record<string, string> = {
   download: 'M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14',
   copy: 'M9 9h10v11H9zM5 15V4h10',
   camera: 'M4 8h3.5L9 5.5h6L16.5 8H20v11H4zM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
+  bell: 'M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0',
+  receipt: 'M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21zM9 8h6M9 12h6M9 16h3',
+  trash: 'M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13',
+  print: 'M7 9V4h10v5M7 17H5V10h14v7h-2M7 14h10v6H7z',
 };
 
 export function Icon({ name, size = 22, label }: { name: keyof typeof paths | string; size?: number; label?: string }) {

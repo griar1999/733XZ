@@ -15,8 +15,22 @@ Every push to `main` redeploys. Open phones pick up the new version the next tim
 `functions/_middleware.ts` sends anyone on a `*.pages.dev` link (including one-off deployment preview links) to 733xz.riarinc.com.
 To turn that off temporarily (for example if the domain stops working), add a Text variable `CANONICAL_HOST` = `off` and redeploy.
 
+## Phone notifications
+Nothing to set up. The server makes its own push keys the first time someone turns notifications on.
+Members turn them on from Home (or More → Your account). On iPhone, PlaneShare must be added to the Home Screen first.
+- Everyone (except whoever made the change): new bookings, changes, cancellations, groundings, cautions, maintenance.
+- Admins: minor issues, flight records flagged for review, returns without a fuel top-off.
+- Just you: your booking starts within 2 hours, your return is 15 minutes overdue, maintenance overlaps your booking, a no-show recorded for you.
+- The next pilot: the aircraft isn't back yet before their booking.
+
+Reminders and overdue notices are sent by `.github/workflows/tick.yml`, which calls `POST /api/tick` every 15 minutes (GitHub may delay scheduled runs a few minutes). They also go out whenever anyone opens the app.
+
 ## Optional variables
 - `OWNER_NAME` (Text): the admin's display name on first start. Defaults to `G`.
+
+## Admin tools
+- More → **Monthly statements**: hours, $50/hr rental and fuel per pilot per month; CSV and Print / Save as PDF.
+- Settings → **Clear test data**: removes bookings, flight records, issues/maintenance/restrictions and optionally activity history. Members, sign-in and settings stay. Type CLEAR to confirm.
 
 ## Sign-in
 - Admin code (the `ADMIN_CODE` secret) always signs in as the owner/admin.

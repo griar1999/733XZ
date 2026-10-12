@@ -5,7 +5,8 @@
 //   sessions       – signed-in phones (hash of the cookie token)
 //   phones         – phone-number sign-in, one number per member
 //   photos         – issue and aircraft photos, served only to signed-in members
-//   meta           – server secrets generated on first run (code pepper)
+//   push_subs      – phones that turned on notifications
+//   meta           – server secrets generated on first run (code pepper, push keys)
 //   login_attempts – recent failed sign-ins per IP, to slow down guessing
 import { normalizePhone } from '../src/domain/phones';
 import type { DbState, Member } from '../src/domain/types';
@@ -74,6 +75,9 @@ export async function ensureSchema(db: D1DB) {
     db.prepare('CREATE TABLE IF NOT EXISTS photos (id TEXT PRIMARY KEY, mime TEXT NOT NULL, data TEXT NOT NULL, added_by TEXT NOT NULL, added_at TEXT NOT NULL)'),
     // daily copies of the app document, kept 60 days (on top of D1's own 30-day Time Travel)
     db.prepare('CREATE TABLE IF NOT EXISTS snapshots (day TEXT PRIMARY KEY, state TEXT NOT NULL, version INTEGER NOT NULL)'),
+    // phone notifications: one row per phone/browser that said yes
+    db.prepare('CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, member_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at TEXT NOT NULL)'),
+    db.prepare('CREATE INDEX IF NOT EXISTS push_subs_member ON push_subs (member_id)'),
   ]);
   schemaReady = true;
 }
@@ -280,4 +284,27 @@ export async function storePhotos(env: Env, args: unknown, memberId: string): Pr
     return out;
   }
   return args;
+}
+
+// ---------- timed checks (booking reminders, overdue returns) ----------
+import { noticesForChange, timedNotices, timedNoticesDue, type PhoneNotice } from '../src/domain/notices';
+export { noticesForChange };
+
+let lastTick = 0;
+/**
+ * Send any due reminders / overdue notices. Cheap when nothing is due (one read).
+ * Called by /api/tick (every 15 minutes from GitHub Actions) and opportunistically when anyone uses the app.
+ */
+export async function runTimedChecks(env: Env, force = false): Promise<PhoneNotice[]> {
+  if (!force && Date.now() - lastTick < 60_000) return [];
+  lastTick = Date.now();
+  const { state } = await loadApp(env);
+  if (!timedNoticesDue(state, Date.now())) return [];
+  let notices: PhoneNotice[] = [];
+  await updateApp(env, (s) => {
+    const r = timedNotices(s, Date.now());
+    notices = r.notices;
+    return { state: s, result: null };
+  });
+  return notices;
 }

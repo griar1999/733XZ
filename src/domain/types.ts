@@ -40,6 +40,9 @@ export interface Booking {
   noShowBy?: string;
   // Set when the aircraft has been returned but no flight record exists yet.
   flightRecordNeeded?: boolean;
+  // Set by the server once a reminder / overdue notice has gone out, so it is sent only once.
+  remindedAt?: string;
+  overdueNotifiedAt?: string;
 }
 
 export interface MaintenanceBlock {

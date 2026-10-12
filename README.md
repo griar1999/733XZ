@@ -37,7 +37,10 @@ public/         manifest, service worker, icons, _headers
 Sign-in (phone number, sign-in code, or admin code) · every permission · overlap and buffer checks against the latest saved data · meter readings that can't go backwards · duplicate flight submissions · groundings that only an admin can clear, with a reason · full activity history.
 
 ## Not included
-Billing or payments, flight planning, weather, public sign-up, push notifications (PGL has these; can be added).
+Billing or payments, flight planning, weather, public sign-up.
+
+## Notifications and statements
+Phone notifications for bookings, cancellations, groundings, reminders and overdue returns (Web Push, no outside service). Monthly statements per pilot with CSV and print. Admin tool to clear test data.
 
 ## Web app
 Installable from Safari (Share → Add to Home Screen) or Chrome (Install app). Pull down on any screen to reload. Changing screens re-checks for a new version and pulls the latest data.

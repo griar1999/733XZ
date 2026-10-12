@@ -10,6 +10,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
     env.DB!.prepare('UPDATE accounts SET code_hash = NULL WHERE member_id = ?').bind(memberId),
     env.DB!.prepare('DELETE FROM sessions WHERE member_id = ?').bind(memberId),
     env.DB!.prepare('DELETE FROM phones WHERE member_id = ?').bind(memberId),
+    env.DB!.prepare('DELETE FROM push_subs WHERE member_id = ?').bind(memberId),
   ]);
   return json({ ok: true });
 });

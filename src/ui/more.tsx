@@ -13,10 +13,12 @@ import type { MorePage } from './context';
 export const demoPages: { DemoTools?: React.FC; Plan?: React.FC } = {};
 import { AccessScreen, AccountCard } from './live';
 import { InstallCard } from './appShell';
+import { ClearDataCard, StatementsScreen } from './statements';
 
 export function MoreScreen() {
   const { more, setMore, me, live } = useApp();
   if (more === 'aircraft') return <Sub title="Aircraft status"><AircraftStatus /></Sub>;
+  if (more === 'statements') return <Sub title="Monthly statements"><StatementsScreen /></Sub>;
   if (more === 'activity') return <Sub title="Activity history"><Activity /></Sub>;
   if (more === 'settings') return <Sub title={me.role === 'admin' ? 'Admin settings' : 'Aircraft settings'}><Settings /></Sub>;
   if (more === 'access' && live && me.role === 'admin') return <Sub title="Members and sign-in"><AccessScreen /></Sub>;
@@ -25,6 +27,7 @@ export function MoreScreen() {
   if (!__LIVE__ && more === 'plan') return <Sub title="Production plan">{demoPages.Plan && <demoPages.Plan />}</Sub>;
   const items: { id: MorePage; icon: string; label: string; sub: string }[] = [
     { id: 'aircraft', icon: 'wrench', label: 'Aircraft status', sub: 'Restrictions, issues, maintenance' },
+    { id: 'statements', icon: 'receipt', label: 'Monthly statements', sub: me.role === 'admin' ? 'Hours, rental and fuel by pilot' : 'Your hours, rental and fuel' },
     { id: 'activity', icon: 'history', label: 'Activity history', sub: 'Who changed what, and when' },
     { id: 'settings', icon: 'settings', label: me.role === 'admin' ? 'Admin settings' : 'Aircraft settings', sub: me.role === 'admin' ? 'Aircraft, members, time zone, rates' : 'View aircraft and group rules' },
     ...(live && me.role === 'admin' ? [{ id: 'access' as MorePage, icon: 'user', label: 'Members and sign-in', sub: 'Add members, phone numbers, codes' }] : []),
@@ -253,6 +256,7 @@ function Settings() {
           ? (isAdmin && <Button icon="plus" onClick={() => setMore('access')}>Add member</Button>)
           : <GatedButton icon="plus" reason="The demo uses six fixed simulated members. The live app adds members under Members and sign-in.">Invite member</GatedButton>}
       </Section>
+      <ClearDataCard />
     </>
   );
 }
