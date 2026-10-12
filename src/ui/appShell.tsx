@@ -1,7 +1,7 @@
 // Web-app behavior: pull down to refresh, and the "install this app" card.
 import React, { useEffect, useRef, useState } from 'react';
 import { isStandalone } from '../services/buildMode';
-import { disablePush, enablePush, pushState, type PushState } from '../services/pushClient';
+import { disablePush, enablePush, pushLikelyOn, pushState, type PushState } from '../services/pushClient';
 import { useApp } from './context';
 import { Button, Icon } from './components';
 
@@ -142,14 +142,17 @@ export function PushToggle({ prompt = false }: { prompt?: boolean }) {
   const { toast } = useApp();
   const [st, setSt] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
-  const [hidden, setHidden] = useState(() => { try { return prompt && localStorage.getItem(PUSH_DISMISS) === '1'; } catch { return false; } });
+  const [hidden, setHidden] = useState(() => { try { return prompt && (localStorage.getItem(PUSH_DISMISS) === '1' || pushLikelyOn()); } catch { return false; } });
   useEffect(() => { void pushState().then(setSt); }, []);
   if (!st || hidden) return null;
   if (prompt && (st === 'on' || st === 'unsupported' || st === 'blocked' || st === 'needs-install')) return null;
 
   const turnOn = async () => {
     setBusy(true);
-    try { await enablePush(); setSt('on'); toast('Notifications are on. A test one is on its way.'); }
+    try {
+      await enablePush(); setSt('on'); toast('Notifications are on. A test one is on its way.');
+      if (prompt) setHidden(true); // done — the Home card goes away for good (turn off under More → Your account)
+    }
     catch (e) { toast((e as Error).message, 'error'); setSt(await pushState()); }
     finally { setBusy(false); }
   };

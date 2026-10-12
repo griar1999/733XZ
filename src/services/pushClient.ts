@@ -17,10 +17,23 @@ export async function pushState(): Promise<PushState> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
   if (Notification.permission === 'denied') return 'blocked';
   try {
-    const reg = await navigator.serviceWorker.getRegistration();
+    // On a fresh app launch the service worker may not be registered yet; wait for it briefly.
+    const reg = (await navigator.serviceWorker.getRegistration())
+      ?? (await Promise.race([navigator.serviceWorker.ready, new Promise<undefined>((r) => setTimeout(() => r(undefined), 3000))]));
     const sub = await reg?.pushManager.getSubscription();
-    return sub && Notification.permission === 'granted' ? 'on' : 'off';
+    const on = !!sub && Notification.permission === 'granted';
+    rememberOn(on);
+    return on ? 'on' : 'off';
   } catch { return 'off'; }
+}
+
+const ON_KEY = 'planeshare.push.on';
+function rememberOn(on: boolean) { try { if (on) localStorage.setItem(ON_KEY, '1'); else localStorage.removeItem(ON_KEY); } catch { /* ignore */ } }
+
+/** True if notifications were turned on on this phone (or the phone already allows them). Used to keep the Home nudge away. */
+export function pushLikelyOn(): boolean {
+  try { if (localStorage.getItem(ON_KEY) === '1') return true; } catch { /* ignore */ }
+  return typeof Notification !== 'undefined' && Notification.permission === 'granted';
 }
 
 export async function enablePush(): Promise<void> {
@@ -32,10 +45,13 @@ export async function enablePush(): Promise<void> {
   let sub = await reg.pushManager.getSubscription();
   if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: unb64u(key) });
   await post('/api/push/subscribe', { subscription: sub.toJSON() });
+  rememberOn(true);
   await post('/api/push/test', {}).catch(() => undefined);
 }
 
 export async function disablePush(): Promise<void> {
+  rememberOn(false);
+  if (!('serviceWorker' in navigator)) return;
   const reg = await navigator.serviceWorker.getRegistration();
   const sub = await reg?.pushManager.getSubscription();
   if (sub) {
