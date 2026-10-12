@@ -1,3 +1,4 @@
+import { noteLines } from '../domain/pilotNotes';
 import React, { useMemo, useState } from 'react';
 import { useApp } from './context';
 import { Avatar, Banner, Button, Empty, GatedButton, Icon, Pill, Section, Segmented, StatusPill } from './components';
@@ -94,7 +95,7 @@ export function Home() {
           </div>
           <div className={`status-tile tone-${grounded || inspOver.length ? 'danger' : restrictions.length ? 'warn' : 'neutral'}`}>
             <p className="eyebrow">Operational restrictions</p>
-            <p className="status-label">{grounded ? 'Grounded' : restrictions.length ? `${restrictions.length} caution${restrictions.length > 1 ? 's' : ''}` : 'None recorded'}</p>
+            <p className="status-label">{grounded ? 'Grounded' : restrictions.length ? 'Caution' : inspOver.length ? 'Inspection overdue' : 'None recorded'}</p>
             {restrictions.length > 0 && (
               <ul className="restrict-list">
                 {restrictions.slice().sort((a, b) => (a.level === 'grounded' ? 0 : 1) - (b.level === 'grounded' ? 0 : 1)).map((r) => (
@@ -103,10 +104,12 @@ export function Home() {
               </ul>
             )}
             {inspOver.length > 0 && <p className="status-detail insp-over-line"><strong>Overdue: {inspOver.map((v) => v.insp.name).join(', ')}</strong></p>}
-            <p className="status-detail">{grounded ? 'Check-out is blocked until an admin clears it.' : restrictions.length || inspOver.length ? 'The pilot in command determines airworthiness.' : 'Recorded restrictions only. The pilot in command determines airworthiness.'}</p>
+            {grounded && <p className="status-detail">Check-out is blocked until an admin clears it.</p>}
           </div>
         </div>
       </div>
+
+      <PilotRequirements />
 
       {__LIVE__ && <InstallCard />}
       {__LIVE__ && <PushToggle prompt />}
@@ -292,5 +295,22 @@ function LogRow({ f }: { f: FlightRecord }) {
         </button>
       </td>
     </tr>
+  );
+}
+
+/** Standing rules every pilot must follow. Set by an admin in Settings; separate from restrictions and issues. */
+function PilotRequirements() {
+  const { db, me, setTab, setMore } = useApp();
+  const lines = noteLines(db.settings.pilotNotes);
+  if (!lines.length) return null;
+  return (
+    <section className="req-card" aria-labelledby="req-h">
+      <div className="req-head">
+        <Icon name="alert" size={20} />
+        <h2 id="req-h">Note to pilots</h2>
+        {me.role === 'admin' && <button className="link" onClick={() => { setTab('more'); setMore('settings'); }}>Edit</button>}
+      </div>
+      <ul className="req-list">{lines.map((l, i) => <li key={i}>{l}</li>)}</ul>
+    </section>
   );
 }

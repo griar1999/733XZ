@@ -3,6 +3,7 @@
 // session, never from the request body, so a member can't act as someone else.
 // Each action receives a private copy of the state, validates against it, mutates it, and returns
 // a result. If it throws, nothing is saved.
+import { noteLines } from '../domain/pilotNotes';
 import type { AircraftSettings, AuditEntry, Booking, BookingInput, DbState, FlightInput, FlightRecord, Issue, IssueStatus, IssueUrgency, MaintenanceBlock, Member, Restriction } from '../domain/types';
 import { ApiError } from './api';
 import { ensureInspections, intervalLabel, currentTach } from '../domain/inspections';
@@ -22,6 +23,8 @@ const iso = (ms: number) => new Date(ms).toISOString();
 const str = (v: unknown, max = 500): string => (typeof v === 'string' ? v : v == null ? '' : String(v)).slice(0, max);
 const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 1e9 ? v : null);
 const isoArg = (v: unknown): string => { const s = str(v, 40); return Number.isFinite(Date.parse(s)) ? new Date(Date.parse(s)).toISOString() : 'invalid'; };
+
+const cleanNotes = (s: string) => noteLines(s).join('\n');
 
 function actor(db: DbState, id: string): Member {
   const m = db.members.find((x) => x.id === id);
@@ -298,6 +301,21 @@ export const ACTIONS: Record<string, ActionDef> = {
     return r;
   }),
 
+  /** Admin: a caution that's really a standing rule becomes a pilot requirement (no "cleared" notice goes out). */
+  restrictionToNote: def((db, actorId, now, [rawId]) => {
+    requireAdmin(db, actorId);
+    const r = db.restrictions.find((x) => x.id === str(rawId, 60));
+    if (!r) throw new ApiError('not_found', 'That restriction no longer exists.');
+    if (r.clearedAt) throw new ApiError('validation', 'This restriction is already cleared.');
+    if (r.level !== 'caution') throw new ApiError('validation', 'A grounding cannot become a pilot requirement. Clear it instead.');
+    const lines = noteLines(db.settings.pilotNotes);
+    if (!lines.includes(r.reason.trim())) lines.push(r.reason.trim());
+    db.settings.pilotNotes = lines.join('\n');
+    r.clearedAt = iso(now); r.clearedBy = actorId; r.clearReason = 'Moved to pilot requirements';
+    audit(db, now, { actorId, action: 'restriction.to_note', entityType: 'restriction', entityId: r.id, summary: `Moved "${r.reason}" from cautions to pilot requirements` });
+    return db.settings;
+  }),
+
   // ---------- admin ----------
   updateSettings: def((db, actorId, now, [rawPatch]) => {
     requireAdmin(db, actorId);
@@ -308,6 +326,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     for (const k of ['bufferMinutes', 'earlyCheckoutMinutes', 'rateCentsPerHour'] as const) if (k in p) patch[k] = Number(p[k]);
     for (const k of ['hobbsEnabled', 'tachEnabled', 'topOffRequired'] as const) if (k in p) patch[k] = p[k] === true;
     if ('rateBasis' in p) patch.rateBasis = p.rateBasis === 'tach' ? 'tach' : 'hobbs';
+    if ('pilotNotes' in p) patch.pilotNotes = cleanNotes(str(p.pilotNotes, 2000));
     if ('fuelPolicy' in p) patch.fuelPolicy = p.fuelPolicy === 'add_to_statement' ? 'add_to_statement' : 'pilot_pays_at_pump';
     const next = { ...db.settings, ...patch };
     const fe: Record<string, string> = {};

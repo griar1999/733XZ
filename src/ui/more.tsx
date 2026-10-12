@@ -88,7 +88,7 @@ function AircraftStatus() {
             <div key={r.id} className={`restrict-card ${r.level}`}>
               <div className="detail-head"><Pill tone={r.level === 'grounded' ? 'danger' : 'warn'}>{r.level === 'grounded' ? 'Grounded' : 'Caution'}</Pill><span className="fine">Since {fmtDateTime(r.createdAt, tz)} · {pilotName(db, r.createdBy)}</span></div>
               <p><strong>{r.reason}</strong></p>
-              {isAdmin ? (clearing === r.id ? <ClearForm id={r.id} done={() => setClearing(null)} /> : <GatedButton reason={offlineWhy} onClick={() => setClearing(r.id)}>Clear restriction…</GatedButton>)
+              {isAdmin ? (clearing === r.id ? <ClearForm id={r.id} done={() => setClearing(null)} /> : <div className="btn-row"><GatedButton reason={offlineWhy} onClick={() => setClearing(r.id)}>Clear restriction…</GatedButton>{r.level === 'caution' && !r.issueId && <MoveToNote id={r.id} offlineWhy={offlineWhy} />}</div>)
                 : <p className="fine">Only an admin can clear this.</p>}
             </div>
           ))}
@@ -120,6 +120,13 @@ function AircraftStatus() {
       {out && <p className="fine">Aircraft is currently checked out by {pilotName(db, out.pilotId)}.</p>}
     </>
   );
+}
+
+/** A standing rule entered as a caution ("Only authorized pilots…") belongs in Note to pilots instead. */
+function MoveToNote({ id, offlineWhy }: { id: string; offlineWhy: string | null }) {
+  const { api, me, toast } = useApp();
+  const act = useAction(() => api.restrictionToNote(me.id, id));
+  return <GatedButton variant="ghost" reason={offlineWhy} pending={act.pending} onClick={async () => { if (await act.run()) toast('Moved to Note to pilots on Home'); }}>Move to Note to pilots</GatedButton>;
 }
 
 function ClearForm({ id, done }: { id: string; done: () => void }) {
@@ -223,6 +230,12 @@ function Settings() {
             <p className="hint">Stored in this browser only for the demo.</p>
             {fe.photo && <p className="field-error">{fe.photo}</p>}
           </div>
+        </fieldset>
+        <fieldset disabled={dis}>
+          <legend>Note to pilots</legend>
+          <Field id="st-notes" label="Requirements every pilot must follow" hint="One per line. Shown on Home in its own card, separate from restrictions and issues. Leave blank to hide the card.">
+            <textarea rows={4} value={s.pilotNotes ?? ''} onChange={(e) => set('pilotNotes', e.target.value)} placeholder="Only authorized pilots are permitted to fly 733XZ. No exceptions." />
+          </Field>
         </fieldset>
         <fieldset disabled={dis}>
           <legend>Scheduling</legend>

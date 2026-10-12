@@ -395,6 +395,14 @@ html, body { overscroll-behavior-y: none; }
 .print-head { display: flex; flex-direction: column; gap: 4px; }
 .log-table tr.sub-row td { background: var(--surface-2); border-bottom-color: var(--surface); }
 .log-table tfoot td { border-top: 2px solid var(--line); font-weight: 600; }
+/* ---------- note to pilots ---------- */
+.req-card { padding: 14px 16px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--accent); display: flex; flex-direction: column; gap: 8px; }
+.req-head { display: flex; align-items: center; gap: 8px; color: var(--accent); }
+.req-head h2 { flex: 1; font-size: .82rem; text-transform: uppercase; letter-spacing: .09em; font-family: var(--f-body); font-weight: 700; color: var(--accent); }
+.req-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.req-list li { font-weight: 700; font-size: 1.02rem; line-height: 1.35; color: var(--fg); overflow-wrap: anywhere; }
+.req-list li::marker { color: var(--accent); }
+
 /* Phone: app-style layout. The page itself never scrolls (so iPhone can't drag the menu around
    when it bounces); only the content area scrolls, and the menu is a solid bar underneath it. */
 @media screen and (max-width: 899px) {

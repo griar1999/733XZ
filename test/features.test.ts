@@ -243,3 +243,23 @@ describe('Editing names', () => {
     expect(api.snapshot().audit.some((a) => a.summary === 'Renamed Jo Park to Jo P')).toBe(true);
   });
 });
+
+describe('Note to pilots', () => {
+  it('admin sets requirements in settings; a caution can move there without a cleared notice', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    const s = await api.updateSettings('m1', { pilotNotes: '  Only authorized pilots.  \n\n Wear a headset ' });
+    expect(s.pilotNotes).toBe('Only authorized pilots.\nWear a headset');
+    const rid = (await api.addRestriction('m1', 'caution', 'No passengers in the back seat.')).id;
+    const mid = clone(api.snapshot());
+    await api.restrictionToNote('m1', rid);
+    const after = api.snapshot();
+    expect(after.settings.pilotNotes!.split('\n')).toContain(after.restrictions.find((x) => x.id === rid)!.reason);
+    expect(after.restrictions.find((x) => x.id === rid)!.clearedAt).toBeTruthy();
+    expect(noticesForChange(mid, after)).toHaveLength(0);
+    expect(after.settings.pilotNotes).toBe('Only authorized pilots.\nWear a headset\nNo passengers in the back seat.');
+    const g = (await api.addRestriction('m1', 'grounded', 'Flat tire on the left main')).id;
+    await expect(api.restrictionToNote('m1', g)).rejects.toThrow(/grounding/);
+    const c2 = (await api.addRestriction('m1', 'caution', 'Another caution here')).id;
+    await expect(api.restrictionToNote('m2', c2)).rejects.toThrow(/admin/);
+  });
+});

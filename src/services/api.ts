@@ -46,6 +46,7 @@ export interface PlaneShareApi {
   endMaintenance(actorId: string, id: string, mode: 'ended' | 'canceled', note: string): Promise<MaintenanceBlock>;
   addRestriction(actorId: string, level: Restriction['level'], reason: string): Promise<Restriction>;
   clearRestriction(actorId: string, id: string, reason: string): Promise<Restriction>;
+  restrictionToNote(actorId: string, id: string): Promise<AircraftSettings>;
 
   updateSettings(actorId: string, patch: Partial<AircraftSettings>): Promise<AircraftSettings>;
   updateMember(actorId: string, id: string, patch: Partial<Pick<Member, 'name' | 'role' | 'active' | 'email'>>): Promise<Member>;
@@ -75,6 +76,7 @@ export function actionMethods(run: <T>(name: string, actorId: string, args: unkn
     endMaintenance: (a: string, id: string, mode: 'ended' | 'canceled', note: string) => run<MaintenanceBlock>('endMaintenance', a, [id, mode, note]),
     addRestriction: (a: string, level: Restriction['level'], reason: string) => run<Restriction>('addRestriction', a, [level, reason]),
     clearRestriction: (a: string, id: string, reason: string) => run<Restriction>('clearRestriction', a, [id, reason]),
+    restrictionToNote: (a: string, id: string) => run<AircraftSettings>('restrictionToNote', a, [id]),
     updateSettings: (a: string, patch: Partial<AircraftSettings>) => run<AircraftSettings>('updateSettings', a, [patch]),
     updateMember: (a: string, id: string, patch: Partial<Pick<Member, 'name' | 'role' | 'active' | 'email'>>) => run<Member>('updateMember', a, [id, patch]),
     addMember: (a: string, name: string, role: Member['role']) => run<Member>('addMember', a, [name, role]),

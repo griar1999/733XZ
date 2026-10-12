@@ -142,6 +142,8 @@ export interface AircraftSettings {
   rateBasis: 'hobbs' | 'tach';
   fuelPolicy: 'pilot_pays_at_pump' | 'add_to_statement';
   topOffRequired: boolean;
+  /** Standing requirements shown to every pilot on Home, one per line (e.g. "Only authorized pilots may fly 733XZ"). */
+  pilotNotes?: string;
 }
 
 export interface AuditEntry {
