@@ -157,7 +157,7 @@ export function RemoveMemberButton({ memberId }: { memberId: string }) {
       {out && <Banner tone="warn" title={`${m.name} has the aircraft checked out. Return it before removing them.`} />}
       <Field id={`rm-${m.id}`} label="Reason (optional)"><input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Left the group" /></Field>
       {act.error && <Banner tone="danger" title={act.error.message} />}
-      <div className="btn-row"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Keep {m.name.split(' ')[0]}</Button><Button type="submit" variant="danger" pending={act.pending} disabled={out}>Remove member</Button></div>
+      <div className="btn-row"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Keep member</Button><Button type="submit" variant="danger" pending={act.pending} disabled={out}>Remove member</Button></div>
     </form>
   );
 }

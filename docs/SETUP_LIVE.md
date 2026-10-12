@@ -30,6 +30,7 @@ Reminders and overdue notices are sent by `.github/workflows/tick.yml`, which ca
 
 ## Admin tools
 - More → **Monthly statements**: hours, $50/hr rental and fuel per pilot per month; CSV and Print / Save as PDF.
+- Members and sign-in (or Settings → Members) → **Remove…**: removes a pilot. They're signed out everywhere, their phone, codes and notifications are deleted, and their upcoming bookings are canceled. Past flights and statements keep their name. You can't remove yourself, the owner account, the last admin, or someone with the aircraft checked out.
 - Settings → **Clear test data**: removes bookings, flight records, issues/maintenance/restrictions and optionally activity history. Members, sign-in and settings stay. Type CLEAR to confirm.
 
 ## Sign-in
