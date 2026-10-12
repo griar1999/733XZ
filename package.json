@@ -7,8 +7,9 @@
     "typecheck": "tsc -p .",
     "build": "node build.mjs",
     "build:preview": "node build.mjs preview",
-    "dev:live": "node build.mjs && wrangler pages dev dist-live --d1 DB=planeshare-db --compatibility-date=2024-09-23 --port 8788",
-    "test:live": "node test/live-api.mjs"
+    "dev:live": "node build.mjs && wrangler dev --port 8788 --local",
+    "test:live": "node test/live-api.mjs",
+    "deploy": "node build.mjs && wrangler deploy"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
@@ -18,7 +19,7 @@
     "react-dom": "^18.3.1",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5",
-    "wrangler": "^3.114.17"
+    "wrangler": "^4.130.0"
   },
   "private": true
 }

@@ -1,6 +1,6 @@
 # PlaneShare — N733XZ
 
-Scheduling, check-out and return, flight-hour records, maintenance and issues for one shared aircraft and its members. Built the same way as PGL: Cloudflare Pages + Pages Functions + D1.
+Scheduling, check-out and return, flight-hour records, maintenance and issues for one shared aircraft and its members. Same design as PGL (one D1 database, phone sign-in), deployed as a Cloudflare Worker with static assets. `server/worker.ts` routes `/api/*` to the handlers in `functions/api/`.
 
 - **Live site:** 733xz.riarinc.com (after setup — see `docs/SETUP_LIVE.md`)
 - **Demo:** `npm run build:preview` makes a single-file demo with fictional data for the Claude preview.
@@ -11,7 +11,7 @@ Scheduling, check-out and return, flight-hour records, maintenance and issues fo
 npm install
 npm test            # unit tests (Vitest)
 npm run typecheck
-npm run build       # dist-live/  — what Cloudflare Pages serves
+npm run build       # dist-live/  — the files the Worker serves
 npm run dev:live    # local live site with a local D1 database (needs .dev.vars)
 npm run test:live   # end-to-end checks against the local live site
 ```

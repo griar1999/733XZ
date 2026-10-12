@@ -1,42 +1,29 @@
 # Live setup (Cloudflare)
 
-Same setup as PGL. About 10 minutes in the Cloudflare dashboard. Nothing to install.
+Same design as PGL (one D1 database, phone sign-in), deployed as a Cloudflare Worker with static assets. About 5 minutes in the dashboard.
 
-## 1. Create the Pages project from GitHub
-Workers & Pages → **Create** → **Pages** → **Connect to Git** → pick **griar1999/733XZ**.
+## 1. Create the Worker from GitHub
+Workers & Pages → **Create** → **Import a repository** → **griar1999/733XZ**.
 - Project name: `733xz`
-- Production branch: `main`
-- Framework preset: **None**
 - Build command: `npm run build`
-- Build output directory: `dist-live`
-- Environment variable (Build): `NODE_VERSION` = `22`
+- Deploy command: `npx wrangler deploy`
 
-Save and Deploy. The first deploy will show "database is not connected yet" — that's expected until step 3.
+Deploy. The database (`planeshare-db`) is already connected through `wrangler.jsonc`; tables are created the first time the site runs.
 
-## 2. Create the database
-Storage & Databases → **D1** → **Create** → name it `planeshare-db` → Create.
-Tables are created automatically the first time the site runs.
-
-## 3. Connect it to the site
-Workers & Pages → **733xz** → **Settings** → **Bindings** → **Add** → **D1 database**
-- Variable name: `DB`
-- Database: `planeshare-db`
-
-## 4. Set your admin code
-Same page → **Variables and Secrets** → **Add**
+## 2. Set your admin code
+**733xz** → **Settings** → **Variables and Secrets** → **Add**
 - Type: **Secret**
 - Name: `ADMIN_CODE`
 - Value: a code only you know, 8–16 letters and numbers (for example `XZ-G-2026-ABCD`). Dashes and case don't matter.
 
-Optional:
-- `OWNER_NAME` (Text): your name as it shows in the app. Defaults to `G`. Only read the very first time the site starts; after that, rename yourself in Settings → Members.
+Optional: `OWNER_NAME` (Text), your name as shown in the app (defaults to `G`, read only on first start).
+Secrets apply right away and are kept on later deploys.
 
-## 5. Redeploy
-Deployments → latest → **⋯ → Retry deployment**. Bindings and secrets apply on the next deploy.
+## 3. Custom address
+**733xz** → **Settings** → **Domains & Routes** → **Add** → **Custom domain** → `733xz.riarinc.com`.
+riarinc.com is already on Cloudflare, so the DNS record is added for you.
 
-## 6. Custom address
-**733xz** → **Custom domains** → **Set up a custom domain** → `733xz.riarinc.com` → Activate.
-Because riarinc.com is already on Cloudflare (PGL uses it), the DNS record is added for you.
+Every push to `main` redeploys automatically.
 
 ## First sign-in
 Open 733xz.riarinc.com → **Have a sign-in code instead?** → enter your ADMIN_CODE. You're signed in as the admin.
@@ -56,5 +43,5 @@ Phone-only sign-in is convenient, not strong security: anyone who knows a member
 - Backups: D1 Time Travel keeps 30 days of point-in-time history. The app also keeps one copy of the data per day for 60 days (`snapshots` table).
 
 ## Local testing
-`npm install`, then put `ADMIN_CODE="..."` in a `.dev.vars` file (not committed), then `npm run dev:live`.
+`npm install`, then put `ADMIN_CODE="..."` in a `.dev.vars` file (not committed), then `npm run dev:live` (runs `wrangler dev` with a local database).
 Site runs at http://localhost:8788 with a local database. `npm run test:live` runs the end-to-end checks against it.
