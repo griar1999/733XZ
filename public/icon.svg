@@ -1,1 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#E8590C"/><path d="M448 330v-42l-170-106V86a22 22 0 0 0-44 0v96L64 288v42l170-53v104l-54 38v26l76-20 76 20v-26l-54-38V277z" fill="#FFFFFF"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#E8590C"/>
+  <g fill="#FFFFFF">
+    <!-- fuselage: tail cone rising to the cabin roof, windshield, cowling -->
+    <path d="M58 246 L66 234 L196 204 L334 204 L376 226 L420 230 C436 233 444 242 444 252 C444 264 436 272 420 274 L340 292 L204 296 L88 268 Z"/>
+    <!-- spinner -->
+    <path d="M444 238 C460 241 466 247 466 253 C466 259 460 265 444 268 Z"/>
+    <!-- high wing on the roof: thin trailing edge (left), rounded leading edge (right) -->
+    <path d="M182 198 L318 184 C338 182 350 186 352 194 C353 201 344 206 330 206 L188 206 C180 206 178 200 182 198 Z"/>
+    <!-- vertical tail, swept back -->
+    <path d="M72 244 L54 150 C53 143 57 139 64 139 L92 139 C100 139 104 144 108 151 L162 222 Z"/>
+    <!-- horizontal stabilizer -->
+    <path d="M36 245 C36 239 42 237 52 237 L132 239 L132 252 L52 254 C42 254 36 251 36 245 Z"/>
+    <!-- propeller, edge-on -->
+    <rect x="463" y="170" width="10" height="168" rx="5"/>
+  </g>
+  <!-- cabin windows -->
+  <g fill="#E8590C">
+    <path d="M206 214 L262 212 L262 244 L210 246 Z"/>
+    <path d="M272 212 L332 212 L360 232 L272 238 Z"/>
+    <path d="M166 226 L198 214 L198 246 L170 248 Z"/>
+  </g>
+  <g stroke="#FFFFFF" stroke-linecap="round" fill="none">
+    <!-- wing strut: lower fuselage up to the wing -->
+    <path d="M286 290 L250 208" stroke-width="9"/>
+    <!-- main gear (spring steel leg) -->
+    <path d="M296 292 L318 344" stroke-width="11"/>
+    <!-- nose gear -->
+    <path d="M410 276 L410 342" stroke-width="10"/>
+  </g>
+  <g fill="#FFFFFF">
+    <circle cx="320" cy="354" r="19"/>
+    <circle cx="410" cy="352" r="15"/>
+  </g>
+</svg>

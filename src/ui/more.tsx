@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp, useAction } from './context';
-import { Avatar, Banner, Button, Empty, Field, GatedButton, Icon, Modal, Pill, Section } from './components';
+import { Avatar, Banner, Button, Empty, Field, GatedButton, Icon, Modal, Pill, Section, PlaneIcon } from './components';
 import { activeRestrictions, aircraftOut } from '../domain/rules';
 import { fmtDateTime, fmtRange, TIME_ZONES } from '../domain/time';
 import { fmtMoney, parseCents } from '../domain/decimal';
@@ -216,7 +216,7 @@ function Settings() {
           <div className="field">
             <label htmlFor="st-photo">Aircraft photo</label>
             <div className="photo-row">
-              {s.photoDataUrl ? <img src={s.photoDataUrl} alt="Aircraft" className="thumb" /> : <div className="thumb placeholder"><Icon name="plane" /></div>}
+              {s.photoDataUrl ? <img src={s.photoDataUrl} alt="Aircraft" className="thumb" /> : <div className="thumb placeholder"><PlaneIcon size={40} /></div>}
               <label className="file-btn"><Icon name="camera" size={20} /> Choose photo<input id="st-photo" type="file" accept="image/*" disabled={dis} onChange={async (e) => { const f = e.target.files?.[0]; if (f) set('photoDataUrl', await resizeImage(f)); }} /></label>
               {s.photoDataUrl && <Button type="button" variant="ghost" onClick={() => set('photoDataUrl', undefined)}>Remove</Button>}
             </div>

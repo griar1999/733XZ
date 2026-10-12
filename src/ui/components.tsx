@@ -165,3 +165,16 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
 export function Skeleton({ lines = 3 }: { lines?: number }) {
   return <div className="skeleton" aria-busy="true" aria-label="Loading">{Array.from({ length: lines }, (_, i) => <span key={i} style={{ width: `${90 - i * 15}%` }} />)}</div>;
 }
+
+/** Cessna 172 side view (high wing, strut, swept tail, fixed gear). Filled, takes the text color. */
+export function PlaneIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={Math.round(size * 240 / 452)} viewBox="28 128 452 240" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d="M58 246 L66 234 L196 204 L334 204 L376 226 L420 230 C436 233 444 242 444 252 C444 264 436 272 420 274 L340 292 L204 296 L88 268 Z M206 214 L262 212 L262 244 L210 246 Z M272 212 L332 212 L360 232 L272 238 Z M166 226 L198 214 L198 246 L170 248 Z" />
+      <path d="M444 238 C460 241 466 247 466 253 C466 259 460 265 444 268 Z M182 198 L318 184 C338 182 350 186 352 194 C353 201 344 206 330 206 L188 206 C180 206 178 200 182 198 Z M72 244 L54 150 C53 143 57 139 64 139 L92 139 C100 139 104 144 108 151 L162 222 Z M36 245 C36 239 42 237 52 237 L132 239 L132 252 L52 254 C42 254 36 251 36 245 Z" />
+      <rect x="463" y="170" width="10" height="168" rx="5" />
+      <path d="M286 290 L250 208 M296 292 L318 344 M410 276 L410 342" stroke="currentColor" strokeWidth="12" strokeLinecap="round" fill="none" />
+      <circle cx="320" cy="354" r="20" /><circle cx="410" cy="352" r="17" />
+    </svg>
+  );
+}

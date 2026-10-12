@@ -42,7 +42,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .acct-switch option { color: #0F1B2D; }
 .sidebar { display: none; }
 .topbar { display: flex; align-items: center; gap: 8px; padding: 14px 16px 4px; font-family: var(--f-display); font-size: 1.1rem; }
-.brand-mark { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: var(--on-primary); }
+.brand-mark { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: var(--on-primary); }
 .brand-tail { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); margin-left: 4px; }
 .main { padding-bottom: calc(var(--nav-h) + 24px + env(safe-area-inset-bottom, 0px)); min-width: 0; }
 .screen { padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 16px; max-width: 1200px; }

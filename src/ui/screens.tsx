@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useApp } from './context';
-import { Avatar, Banner, Button, Empty, GatedButton, Icon, Pill, Section, Segmented, StatusPill } from './components';
+import { Avatar, Banner, Button, Empty, GatedButton, Icon, Pill, Section, Segmented, StatusPill, PlaneIcon } from './components';
 import { activeRestrictions, aircraftOut, charges, checkOutBlocker, isOverdue, lastReadings, overlaps, sumMeter } from '../domain/rules';
 import { fmtDateTime, fmtRange, fmtTime, toLocalParts, addDays } from '../domain/time';
 import { fmtHundredths, fmtMoney } from '../domain/decimal';
@@ -17,7 +17,7 @@ export function AircraftHero({ compact }: { compact?: boolean }) {
     <div className={`aircraft ${compact ? 'compact' : ''}`}>
       {s.photoDataUrl
         ? <img src={s.photoDataUrl} alt={`${s.tailNumber} ${s.model}`} className="aircraft-photo" />
-        : <div className="aircraft-photo placeholder" aria-hidden="true"><Icon name="plane" size={34} /></div>}
+        : <div className="aircraft-photo placeholder" aria-hidden="true"><PlaneIcon size={58} /></div>}
       <div>
         <p className="tail">{s.tailNumber}</p>
         <p className="model">{s.model || 'Aircraft model not set'}</p>
