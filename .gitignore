@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-live/
+dist-preview/
+*.zip
+.dev.vars
+.wrangler/

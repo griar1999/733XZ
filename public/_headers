@@ -1,0 +1,8 @@
+/*
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+  Permissions-Policy: camera=(self), geolocation=()
+/sw.js
+  Cache-Control: no-cache
