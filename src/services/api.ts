@@ -53,7 +53,7 @@ export interface PlaneShareApi {
   addMember(actorId: string, name: string, role: Member['role']): Promise<Member>;
   removeMember(actorId: string, id: string, reason: string): Promise<{ removed: string; canceledBookings: number; deleted: boolean }>;
   recordInspection(actorId: string, id: string, input: { date: string; tach: number | null; notes: string }): Promise<Inspection>;
-  updateInspection(actorId: string, id: string, patch: Partial<Pick<Inspection, 'name' | 'kind' | 'interval' | 'active' | 'pilotsCanRecord' | 'lastDate' | 'lastTach'>>): Promise<Inspection>;
+  updateInspection(actorId: string, id: string, patch: Partial<Pick<Inspection, 'name' | 'kind' | 'interval' | 'active' | 'pilotsCanRecord' | 'lastDate' | 'lastTach' | 'nextDate' | 'nextTach'>>): Promise<Inspection>;
   addInspection(actorId: string, input: { name: string; kind: Inspection['kind']; interval: number; pilotsCanRecord: boolean }): Promise<Inspection>;
   clearData(actorId: string, opts: { bookings: boolean; flights: boolean; aircraft: boolean; inspections?: boolean; history: boolean; confirm: string }): Promise<{ cleared: string[] }>;
   resetDemo(): Promise<void>;
@@ -82,7 +82,7 @@ export function actionMethods(run: <T>(name: string, actorId: string, args: unkn
     addMember: (a: string, name: string, role: Member['role']) => run<Member>('addMember', a, [name, role]),
     removeMember: (a: string, id: string, reason: string) => run<{ removed: string; canceledBookings: number; deleted: boolean }>('removeMember', a, [id, reason]),
     recordInspection: (a: string, id: string, input: { date: string; tach: number | null; notes: string }) => run<Inspection>('recordInspection', a, [id, input]),
-    updateInspection: (a: string, id: string, patch: Partial<Pick<Inspection, 'name' | 'kind' | 'interval' | 'active' | 'pilotsCanRecord' | 'lastDate' | 'lastTach'>>) => run<Inspection>('updateInspection', a, [id, patch]),
+    updateInspection: (a: string, id: string, patch: Partial<Pick<Inspection, 'name' | 'kind' | 'interval' | 'active' | 'pilotsCanRecord' | 'lastDate' | 'lastTach' | 'nextDate' | 'nextTach'>>) => run<Inspection>('updateInspection', a, [id, patch]),
     addInspection: (a: string, input: { name: string; kind: Inspection['kind']; interval: number; pilotsCanRecord: boolean }) => run<Inspection>('addInspection', a, [input]),
     clearData: (a: string, opts: { bookings: boolean; flights: boolean; aircraft: boolean; inspections?: boolean; history: boolean; confirm: string }) => run<{ cleared: string[] }>('clearData', a, [opts]),
   };

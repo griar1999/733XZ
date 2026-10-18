@@ -478,6 +478,20 @@ html, body { overscroll-behavior-y: none; }
 .insp-left { font-size: .82rem; font-weight: 600; color: var(--muted); }
 .insp-left.soon { color: var(--warn); }
 .insp-left.overdue { color: var(--danger); }
+.insp-head-right { display: flex; align-items: center; gap: 2px; flex: none; }
+.insp-head-right .icon-btn { font-size: 1.3rem; line-height: 1; color: var(--muted); min-width: 40px; min-height: 40px; }
+.insp-box { position: relative; border: 1.5px solid transparent; transition: border-color .15s, background .15s; }
+.insp-box.tappable { cursor: pointer; }
+.insp-box.tappable:hover, .insp-box.tappable:focus-visible { border-color: var(--accent); }
+.insp-box.tappable:active { background: var(--accent-soft); }
+.insp-box.is-empty dd { color: var(--accent); }
+.insp-box.editing { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.insp-pencil { float: right; color: var(--muted); font-size: .9rem; letter-spacing: 0; }
+.insp-edit { display: flex; flex-direction: column; gap: 6px; font-weight: 500; }
+.insp-edit input { min-height: 42px; padding: 0 8px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface); width: 100%; font-weight: 600; }
+.insp-edit input:focus { border-color: var(--accent); outline: none; }
+.insp-edit .field-error { font-size: .8rem; }
+.insp-set { font-weight: 500; }
 .insp-allgood { display: flex; gap: 6px; align-items: center; color: var(--ok); font-weight: 600; }
 .insp-over-line { color: var(--danger); }
 .restrict-list { list-style: none; margin: 4px 0 2px; padding: 0; display: flex; flex-direction: column; gap: 4px; }

@@ -77,8 +77,9 @@ export function dueInfo(insp: Inspection, currentTach: number | null, today: str
   const blank: DueInfo = { status: 'unset', nextDate: null, nextTach: null, daysLeft: null, tachLeft: null, summary: 'Enter the last time it was done' };
   if (insp.kind === 'tach') {
     if (!tachEnabled) return { ...blank, status: 'no-meter', summary: 'Tach meter is turned off in Settings' };
-    if (insp.lastTach === null) return blank;
-    const nextTach = insp.lastTach + insp.interval * 100;
+    const override = insp.nextTach ?? null;
+    if (insp.lastTach === null && override === null) return blank;
+    const nextTach = override ?? insp.lastTach! + insp.interval * 100;
     if (currentTach === null) return { ...blank, status: 'ok', nextTach, summary: `Due at tach ${fmtHundredths(nextTach)}` };
     const left = nextTach - currentTach;
     const status: InspectionStatus = left <= 0 ? 'overdue' : left <= soonThreshold('tach', insp.interval) ? 'soon' : 'ok';
@@ -87,8 +88,11 @@ export function dueInfo(insp: Inspection, currentTach: number | null, today: str
       summary: left <= 0 ? `Due at tach ${fmtHundredths(nextTach)} · overdue by ${fmtHundredths(-left)} h` : `Due at tach ${fmtHundredths(nextTach)} · ${fmtHundredths(left)} h left`,
     };
   }
-  if (!insp.lastDate) return blank;
-  const nextDate = insp.kind === 'months' ? endOfMonthAfter(insp.lastDate, insp.interval)
+  const dateOverride = insp.nextDate ?? null;
+  if (!insp.lastDate && !dateOverride) return blank;
+  const nextDate = dateOverride ? dateOverride
+    : !insp.lastDate ? '' // unreachable
+    : insp.kind === 'months' ? endOfMonthAfter(insp.lastDate, insp.interval)
     : insp.kind === 'days' ? addDays(insp.lastDate, insp.interval)
     : `${Number(insp.lastDate.slice(0, 4)) + 1}-12-31`;
   const daysLeft = daysBetween(today, nextDate);

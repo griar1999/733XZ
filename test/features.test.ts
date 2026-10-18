@@ -287,3 +287,33 @@ describe('Flight paths', () => {
     expect(downsample(Array.from({ length: 2000 }, (_, i) => [i, 0, 0, 0] as [number, number, number, number]), 100)).toHaveLength(100);
   });
 });
+
+describe('Inspection next-due override', () => {
+  it('admin can set next due; recording a new one clears it', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    await api.recordInspection('m1', 'insp_elt', { date: '2026-01-15', tach: null, notes: '' });
+    const v = () => inspectionViews(api.snapshot(), '2026-10-10').find((x) => x.insp.id === 'insp_elt')!;
+    expect(v().due.nextDate).toBe('2027-01-31');
+    await api.updateInspection('m1', 'insp_elt', { nextDate: '2026-12-01' });
+    expect(v().due.nextDate).toBe('2026-12-01');
+    await expect(api.updateInspection('m1', 'insp_elt', { nextDate: '2025-12-01' })).rejects.toThrow(/after the last/);
+    await api.recordInspection('m1', 'insp_elt', { date: '2026-10-01', tach: null, notes: '' });
+    expect(v().insp.nextDate).toBeNull();
+    expect(v().due.nextDate).toBe('2027-10-31');
+    await api.updateInspection('m1', 'insp_elt', { nextDate: '2027-06-30' });
+    await api.updateInspection('m1', 'insp_elt', { nextDate: null });
+    expect(v().due.nextDate).toBe('2027-10-31');
+    await expect(api.updateInspection('m2', 'insp_elt', { nextDate: '2027-06-30' })).rejects.toThrow(/admin/);
+  });
+  it('tach override and correction', async () => {
+    const api = new MockApi({ storage: mem(), now: () => NOW });
+    const cur = (await import('../src/domain/inspections')).currentTach(api.snapshot())!;
+    await api.recordInspection('m1', 'insp_50hr', { date: '2026-10-01', tach: cur - 1000, notes: '' });
+    await api.updateInspection('m1', 'insp_50hr', { nextTach: cur + 2000 });
+    const v = inspectionViews(api.snapshot(), '2026-10-10').find((x) => x.insp.id === 'insp_50hr')!;
+    expect(v.due.nextTach).toBe(cur + 2000);
+    await expect(api.updateInspection('m1', 'insp_50hr', { nextTach: cur - 2000 })).rejects.toThrow(/above the last/);
+    await api.updateInspection('m1', 'insp_50hr', { lastDate: '2026-09-01', lastTach: cur - 1500 });
+    expect(api.snapshot().inspections.find((i) => i.id === 'insp_50hr')!.lastTach).toBe(cur - 1500);
+  });
+});

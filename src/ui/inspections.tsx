@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp, useAction } from './context';
 import { Banner, Button, Empty, Field, GatedButton, Icon, Pill, Section } from './components';
 import { fmtDay, intervalLabel, inspectionViews, statusLabel, currentTach, type InspectionStatus, type InspectionView } from '../domain/inspections';
@@ -66,30 +66,29 @@ export function InspectionsScreen() {
 function InspectionCard({ v }: { v: InspectionView }) {
   const { db, me, tz, offline } = useApp();
   const { insp, due } = v;
-  const [mode, setMode] = useState<null | 'record' | 'edit'>(null);
-  const canRecord = me.role === 'admin' || insp.pilotsCanRecord;
-  const last = insp.lastDate ? `${fmtDay(insp.lastDate)}${insp.kind === 'tach' && insp.lastTach !== null ? ` · tach ${fmtHundredths(insp.lastTach)}` : ''}` : 'Not entered';
+  const [settings, setSettings] = useState(false);
+  const isAdmin = me.role === 'admin';
+  const canRecord = (isAdmin || insp.pilotsCanRecord) && !offline;
+  const last = insp.lastDate ? `${fmtDay(insp.lastDate)}${insp.kind === 'tach' && insp.lastTach !== null ? ` · tach ${fmtHundredths(insp.lastTach)}` : ''}` : canRecord ? 'Tap to enter' : 'Not entered';
   const next = due.status === 'unset' ? '—' : due.status === 'no-meter' ? due.summary : due.nextDate ? fmtDay(due.nextDate) : due.nextTach !== null ? `Tach ${fmtHundredths(due.nextTach)}` : '—';
   const left = due.daysLeft !== null ? (due.daysLeft < 0 ? `${-due.daysLeft} day${due.daysLeft === -1 ? '' : 's'} overdue` : `${due.daysLeft} day${due.daysLeft === 1 ? '' : 's'} left`)
     : due.tachLeft !== null ? (due.tachLeft <= 0 ? `${fmtHundredths(-due.tachLeft)} h overdue` : `${fmtHundredths(due.tachLeft)} h left`) : '';
+  const overridden = insp.nextDate != null || insp.nextTach != null;
   return (
     <div className={`insp-card st-${due.status}`}>
       <div className="insp-head">
         <div><p className="insp-name">{insp.name}</p><p className="fine">{intervalLabel(insp.kind, insp.interval)}</p></div>
-        <Pill tone={tone(due.status)}>{statusLabel(due.status)}</Pill>
+        <div className="insp-head-right">
+          <Pill tone={tone(due.status)}>{statusLabel(due.status)}</Pill>
+          {isAdmin && <button type="button" className="icon-btn" aria-label={`Settings for ${insp.name}`} aria-expanded={settings} onClick={() => setSettings((x) => !x)}>⋯</button>}
+        </div>
       </div>
       <dl className="insp-kv">
-        <div><dt>Last</dt><dd>{last}</dd></div>
-        <div><dt>Next</dt><dd>{next}{left && <span className={`insp-left ${due.status}`}>{left}</span>}</dd></div>
+        <InlineBox label="Last" canEdit={canRecord} display={last} empty={!insp.lastDate} editor={(close) => <LastEditor insp={insp} close={close} />} />
+        <InlineBox label="Next" canEdit={isAdmin && !offline && due.status !== 'no-meter'} display={<>{next}{left && <span className={`insp-left ${due.status}`}>{left}</span>}{overridden && <span className="insp-set fine">Set by admin</span>}</>}
+          editor={(close) => <NextEditor insp={insp} due={due} close={close} />} />
       </dl>
-      {mode === 'record' && <RecordForm insp={insp} done={() => setMode(null)} />}
-      {mode === 'edit' && <EditForm insp={insp} done={() => setMode(null)} />}
-      {!mode && (
-        <div className="btn-row">
-          {canRecord && <GatedButton variant={due.status === 'overdue' || due.status === 'soon' || due.status === 'unset' ? 'primary' : 'secondary'} icon="check" reason={offline ? 'You are offline.' : null} onClick={() => setMode('record')}>{insp.lastDate ? 'Record completed' : 'Enter last done'}</GatedButton>}
-          {me.role === 'admin' && <Button variant="ghost" onClick={() => setMode('edit')}>Edit</Button>}
-        </div>
-      )}
+      {settings && <EditForm insp={insp} done={() => setSettings(false)} />}
       {insp.history.length > 0 && (
         <details className="history">
           <summary>History ({insp.history.length})</summary>
@@ -100,38 +99,129 @@ function InspectionCard({ v }: { v: InspectionView }) {
   );
 }
 
-function RecordForm({ insp, done }: { insp: Inspection; done: () => void }) {
+/**
+ * A Last/Next box that turns into inputs when tapped and saves when you tap anywhere outside it.
+ * The editor gets `close`, and registers its save via the returned ref so tapping away can call it.
+ */
+type Saver = { save: () => Promise<boolean>; cancel: () => void };
+function InlineBox({ label, display, canEdit, empty, editor }: { label: string; display: React.ReactNode; canEdit: boolean; empty?: boolean; editor: (close: () => void, reg: (s: Saver) => void) => React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const saver = useRef<Saver | null>(null);
+  const busy = useRef(false);
+  const close = () => { saver.current = null; setOpen(false); };
+  useEffect(() => {
+    if (!open) return;
+    const away = async (e: Event) => {
+      if (box.current && box.current.contains(e.target as Node)) return;
+      if (busy.current || !saver.current) return;
+      busy.current = true;
+      try { if (await saver.current.save()) close(); } finally { busy.current = false; }
+    };
+    document.addEventListener('pointerdown', away, true);
+    return () => document.removeEventListener('pointerdown', away, true);
+  }, [open]);
+  const onKey = async (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') { saver.current?.cancel(); close(); }
+    if (e.key === 'Enter' && saver.current && !busy.current) { e.preventDefault(); busy.current = true; try { if (await saver.current.save()) close(); } finally { busy.current = false; } }
+  };
+  if (!canEdit) return <div><dt>{label}</dt><dd>{display}</dd></div>;
+  return (
+    <div ref={box} className={`insp-box ${open ? 'editing' : 'tappable'} ${empty && !open ? 'is-empty' : ''}`}
+      role={open ? undefined : 'button'} tabIndex={open ? undefined : 0} aria-label={open ? undefined : `Change ${label.toLowerCase()}`}
+      onClick={() => { if (!open) setOpen(true); }} onKeyDown={(e) => { if (!open && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setOpen(true); } else if (open) void onKey(e); }}>
+      <dt>{label}{!open && <span className="insp-pencil" aria-hidden="true">✎</span>}</dt>
+      <dd>{open ? <EditorHost render={editor} close={close} reg={(sv) => { saver.current = sv; }} /> : display}</dd>
+    </div>
+  );
+}
+function EditorHost({ render, close, reg }: { render: (close: () => void, reg: (s: Saver) => void) => React.ReactNode; close: () => void; reg: (s: Saver) => void }) {
+  return <RegContext.Provider value={reg}>{render(close, reg)}</RegContext.Provider>;
+}
+
+// The editors register their save function with the box through this context-free hook.
+const RegContext = React.createContext<(s: Saver) => void>(() => {});
+
+function LastEditor({ insp, close }: { insp: Inspection; close: () => void }) {
   const { api, db, me, tz, now, toast } = useApp();
+  const reg = React.useContext(RegContext);
   const today = toLocalParts(now, tz).date;
   const cur = currentTach(db);
-  const [date, setDate] = useState(today);
-  const [tach, setTach] = useState(insp.kind === 'tach' && cur !== null ? fmtHundredths(cur) : '');
-  const [notes, setNotes] = useState('');
-  const [tachErr, setTachErr] = useState('');
-  const act = useAction(async () => {
-    let t: number | null = null;
-    if (tach.trim()) {
-      const r = parseHundredths(tach, 'Tach');
-      if (!r.ok) { setTachErr(r.error); throw new Error(r.error); }
-      t = r.value;
-    }
-    setTachErr('');
-    return api.recordInspection(me.id, insp.id, { date, tach: t, notes });
-  });
-  const fe = act.error?.details.fieldErrors ?? {};
+  const tachKind = insp.kind === 'tach';
+  const [date, setDate] = useState(insp.lastDate ?? today);
+  const [tach, setTach] = useState(insp.lastTach !== null ? fmtHundredths(insp.lastTach) : tachKind && cur !== null ? fmtHundredths(cur) : '');
+  const [err, setErr] = useState('');
+  const state = useRef({ date, tach }); state.current = { date, tach };
+  useEffect(() => {
+    reg({
+      cancel: () => {},
+      save: async () => {
+        const { date: d, tach: t } = state.current;
+        let tv: number | null = null;
+        if (t.trim()) { const r = parseHundredths(t, 'Tach'); if (!r.ok) { setErr(r.error); return false; } tv = r.value; }
+        if (!d) { setErr('Enter the date it was done.'); return false; }
+        if (tachKind && tv === null) { setErr('Enter the tach reading when it was done.'); return false; }
+        const same = d === insp.lastDate && (!tachKind || tv === insp.lastTach);
+        if (same) return true; // nothing changed
+        // later than what's on file = a new one done (kept in history); earlier = an admin correcting a mistake
+        const forward = !insp.lastDate || (d >= insp.lastDate && (!tachKind || insp.lastTach === null || (tv ?? 0) >= insp.lastTach));
+        try {
+          if (forward) await api.recordInspection(me.id, insp.id, { date: d, tach: tv, notes: '' });
+          else if (me.role === 'admin') await api.updateInspection(me.id, insp.id, { lastDate: d, lastTach: tachKind ? tv : insp.lastTach });
+          else { setErr(`That's earlier than the last one recorded. Ask an admin to correct it.`); return false; }
+          toast(`${insp.name} saved`);
+          return true;
+        } catch (e) { setErr((e as Error).message); return false; }
+      },
+    });
+  }); // re-register each render so save sees fresh props
   return (
-    <form className="form confirm-box" onSubmit={async (e) => { e.preventDefault(); const r = await act.run(); if (r) { toast(`${insp.name} recorded`); done(); } }}>
-      <p className="confirm-title">{insp.lastDate ? 'Record completed' : 'Enter when it was last done'}</p>
-      <div className="grid2">
-        <Field id={`ri-d-${insp.id}`} label="Date done" error={fe.date}><input type="date" value={date} max={today} onChange={(e) => setDate(e.target.value)} /></Field>
-        <Field id={`ri-t-${insp.id}`} label={insp.kind === 'tach' ? 'Tach at inspection' : 'Tach (optional)'} error={tachErr || fe.tach} hint={cur !== null ? `Latest in flight log: ${fmtHundredths(cur)}` : undefined}>
-          <input className="mono" inputMode="decimal" value={tach} onChange={(e) => setTach(e.target.value)} />
-        </Field>
-      </div>
-      <Field id={`ri-n-${insp.id}`} label="Notes (optional)"><input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. Shop name, logbook signed" /></Field>
-      {act.error && !act.error.details.fieldErrors && !tachErr && <Banner tone="danger" title={act.error.message} />}
-      <div className="btn-row"><Button type="button" variant="ghost" onClick={done}>Cancel</Button><Button type="submit" variant="primary" pending={act.pending}>Save</Button></div>
-    </form>
+    <div className="insp-edit">
+      <input type="date" aria-label="Date done" value={date} max={today} onChange={(e) => { setDate(e.target.value); setErr(''); }} autoFocus={!tachKind} />
+      {tachKind && <input className="mono" inputMode="decimal" aria-label="Tach at inspection" placeholder="Tach" value={tach} onChange={(e) => { setTach(e.target.value); setErr(''); }} autoFocus />}
+      {tachKind && cur !== null && <span className="fine">Flight log tach: {fmtHundredths(cur)}</span>}
+      {err ? <span className="field-error">{err} <button type="button" className="link small" onClick={(e) => { e.stopPropagation(); close(); }}>Undo</button></span> : <span className="fine">Tap outside to save</span>}
+    </div>
+  );
+}
+
+function NextEditor({ insp, due, close }: { insp: Inspection; due: InspectionView['due']; close: () => void }) {
+  const { api, me, toast } = useApp();
+  const reg = React.useContext(RegContext);
+  const tachKind = insp.kind === 'tach';
+  const [val, setVal] = useState(tachKind ? (due.nextTach !== null ? fmtHundredths(due.nextTach) : '') : (due.nextDate ?? ''));
+  const [err, setErr] = useState('');
+  const state = useRef(val); state.current = val;
+  const overridden = insp.nextDate != null || insp.nextTach != null;
+  useEffect(() => {
+    reg({
+      cancel: () => {},
+      save: async () => {
+        const v = state.current.trim();
+        try {
+          if (tachKind) {
+            let tv: number | null = null;
+            if (v) { const r = parseHundredths(v, 'Next tach'); if (!r.ok) { setErr(r.error); return false; } tv = r.value; }
+            if (tv === due.nextTach || (tv === null && !overridden)) return true;
+            await api.updateInspection(me.id, insp.id, { nextTach: tv });
+          } else {
+            if ((v || null) === due.nextDate || (!v && !overridden)) return true;
+            await api.updateInspection(me.id, insp.id, { nextDate: v || null });
+          }
+          toast(v ? `${insp.name}: next due updated` : `${insp.name}: back to the normal interval`);
+          return true;
+        } catch (e) { setErr((e as Error).message); return false; }
+      },
+    });
+  });
+  return (
+    <div className="insp-edit">
+      {tachKind
+        ? <input className="mono" inputMode="decimal" aria-label="Next due tach" placeholder="Tach" value={val} onChange={(e) => { setVal(e.target.value); setErr(''); }} autoFocus />
+        : <input type="date" aria-label="Next due date" value={val} onChange={(e) => { setVal(e.target.value); setErr(''); }} />}
+      {overridden && <button type="button" className="link small" onClick={(e) => { e.stopPropagation(); setVal(''); }}>Use normal interval</button>}
+      {err ? <span className="field-error">{err} <button type="button" className="link small" onClick={(e) => { e.stopPropagation(); close(); }}>Undo</button></span> : <span className="fine">Tap outside to save</span>}
+    </div>
   );
 }
 
@@ -143,28 +233,17 @@ function EditForm({ insp, done }: { insp: Inspection; done: () => void }) {
   const [kind, setKind] = useState<InspectionKind>(insp.kind);
   const [interval, setInterval] = useState(String(insp.interval));
   const [pilots, setPilots] = useState(insp.pilotsCanRecord);
-  const [lastDate, setLastDate] = useState(insp.lastDate ?? '');
-  const [lastTach, setLastTach] = useState(insp.lastTach !== null ? fmtHundredths(insp.lastTach) : '');
   const [off, setOff] = useState(false);
-  const act = useAction(async () => {
-    let lt: number | null = null;
-    if (lastTach.trim()) { const r = parseHundredths(lastTach, 'Last tach'); if (!r.ok) throw new Error(r.error); lt = r.value; }
-    return api.updateInspection(me.id, insp.id, { name, kind, interval: Number(interval), pilotsCanRecord: pilots, lastDate: lastDate || null, lastTach: lt });
-  });
+  const act = useAction(() => api.updateInspection(me.id, insp.id, { name, kind, interval: Number(interval), pilotsCanRecord: pilots }));
   const turnOff = useAction(() => api.updateInspection(me.id, insp.id, { active: false }));
   const fe = act.error?.details.fieldErrors ?? {};
   return (
     <form className="form confirm-box" onSubmit={async (e) => { e.preventDefault(); const r = await act.run(); if (r) { toast('Inspection updated'); done(); } }}>
-      <p className="confirm-title">Edit {insp.name}</p>
+      <p className="confirm-title">{insp.name} settings</p>
       <Field id={`ei-n-${insp.id}`} label="Name" error={fe.name}><input value={name} onChange={(e) => setName(e.target.value)} /></Field>
       <div className="grid2">
         <Field id={`ei-k-${insp.id}`} label="Based on"><select value={kind} onChange={(e) => setKind(e.target.value as InspectionKind)}>{(Object.keys(KIND_LABEL) as InspectionKind[]).map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}</select></Field>
         {kind !== 'yearEnd' && <Field id={`ei-i-${insp.id}`} label="Every" error={fe.interval}><input type="number" min={1} value={interval} onChange={(e) => setInterval(e.target.value)} /></Field>}
-      </div>
-      <p className="fine">Correct the last-done values only to fix a mistake. To log a new inspection, use Record completed.</p>
-      <div className="grid2">
-        <Field id={`ei-ld-${insp.id}`} label="Last done" error={fe.lastDate}><input type="date" value={lastDate} onChange={(e) => setLastDate(e.target.value)} /></Field>
-        <Field id={`ei-lt-${insp.id}`} label="Last tach"><input className="mono" inputMode="decimal" value={lastTach} onChange={(e) => setLastTach(e.target.value)} /></Field>
       </div>
       <label className="check-row"><input type="checkbox" checked={pilots} onChange={(e) => setPilots(e.target.checked)} /><span><strong>Pilots can record this</strong><br /><span className="fine">For checks a pilot does, like the VOR check.</span></span></label>
       {act.error && !act.error.details.fieldErrors && <Banner tone="danger" title={act.error.message} />}

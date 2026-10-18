@@ -185,6 +185,9 @@ export interface Inspection {
   pilotsCanRecord: boolean;
   lastDate: string | null;
   lastTach: number | null;
+  /** Admin override for when it's next due (e.g. a mechanic set a different due point). Cleared when a new one is recorded. */
+  nextDate?: string | null;
+  nextTach?: number | null;
   history: InspectionRecord[];
   notified?: 'soon' | 'overdue' | null; // server bookkeeping so each alert goes out once
 }

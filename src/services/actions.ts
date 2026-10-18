@@ -467,6 +467,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     if (Object.keys(fe).length) throw new ApiError('validation', Object.values(fe)[0], { fieldErrors: fe });
     insp.lastDate = date;
     insp.lastTach = insp.kind === 'tach' ? tach : tach ?? insp.lastTach;
+    insp.nextDate = null; insp.nextTach = null; // a new one restarts the normal interval
     insp.history.unshift({ date, tach: insp.kind === 'tach' ? tach : tach, notes, by: actorId, at: iso(now) });
     if (insp.history.length > 50) insp.history.length = 50;
     insp.notified = null;
@@ -490,14 +491,25 @@ export const ACTIONS: Record<string, ActionDef> = {
     // admin correction of the last-done values (kept in activity history with the old values)
     if ('lastDate' in p) next.lastDate = p.lastDate ? str(p.lastDate, 10) : null;
     if ('lastTach' in p) next.lastTach = numOrNull(p.lastTach);
+    // admin override of when it's next due; null/blank goes back to the normal interval
+    if ('nextDate' in p) next.nextDate = p.nextDate ? str(p.nextDate, 10) : null;
+    if ('nextTach' in p) next.nextTach = numOrNull(p.nextTach);
     const fe: Record<string, string> = {};
+    if (next.nextDate && (!/^\d{4}-\d{2}-\d{2}$/.test(next.nextDate) || !Number.isFinite(Date.parse(next.nextDate)))) fe.nextDate = 'Enter a valid date.';
+    if (next.nextTach !== null && next.nextTach !== undefined && (!Number.isInteger(next.nextTach) || next.nextTach <= 0)) fe.nextTach = 'Enter a tach reading.';
+    if (next.nextTach != null && next.lastTach !== null && next.nextTach <= next.lastTach) fe.nextTach = `Next due must be above the last tach (${fmtHundredths(next.lastTach)}).`;
+    if (next.nextDate && next.lastDate && next.nextDate <= next.lastDate) fe.nextDate = 'Next due must be after the last one.';
     if (next.lastDate && (!/^\d{4}-\d{2}-\d{2}$/.test(next.lastDate) || next.lastDate > toLocalParts(now, db.settings.timeZone).date)) fe.lastDate = 'Enter a past date.';
     if (!next.name) fe.name = 'Enter a name.';
     if (next.kind !== 'yearEnd' && (!Number.isInteger(next.interval) || next.interval < 1 || next.interval > (next.kind === 'tach' ? 2000 : next.kind === 'months' ? 120 : 3650))) fe.interval = 'Enter a whole number in range.';
     if (next.kind === 'yearEnd') next.interval = 1;
     if (Object.keys(fe).length) throw new ApiError('validation', Object.values(fe)[0], { fieldErrors: fe });
     Object.assign(insp, next, { notified: null });
-    audit(db, now, { actorId, action: 'inspection.update', entityType: 'inspection', entityId: insp.id, summary: `Changed ${insp.name}: ${intervalLabel(insp.kind, insp.interval)}${insp.active ? '' : ' (turned off)'}`, before });
+    const what = 'nextDate' in p || 'nextTach' in p
+      ? (insp.nextDate ? `next due set to ${insp.nextDate}` : insp.nextTach != null ? `next due set to tach ${fmtHundredths(insp.nextTach)}` : 'next due back to the normal interval')
+      : 'lastDate' in p || 'lastTach' in p ? `last done corrected to ${insp.lastDate ?? '—'}${insp.lastTach != null && insp.kind === 'tach' ? ` at tach ${fmtHundredths(insp.lastTach)}` : ''}`
+      : `${intervalLabel(insp.kind, insp.interval)}${insp.active ? '' : ' (turned off)'}`;
+    audit(db, now, { actorId, action: 'inspection.update', entityType: 'inspection', entityId: insp.id, summary: `Changed ${insp.name}: ${what}`, before });
     return insp;
   }),
 
