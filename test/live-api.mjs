@@ -83,6 +83,25 @@ ok((await act(admin, 'updateIssue', iss.data.result.id, 'resolved', 'fixed')).st
 ok((await req(admin, '/api/state')).data.state.restrictions.some((r) => r.id === rid && !r.clearedAt), 'grounding stays after issue resolved');
 ok((await act(admin, 'clearRestriction', rid, 'Shop signed off repair, logbook reviewed')).status === 200, 'admin clears grounding with reason');
 
+console.log('Flight record privacy');
+const q = (m) => new Date(Math.ceil((Date.now() + m * 60e3) / 900e3) * 900e3).toISOString();
+const fb = await act(pa, 'createBooking', { pilotId: A, startUtc: q(15), endUtc: q(75), destination: '', notes: '' });
+ok(fb.status === 200, 'pilot A books a flight starting soon');
+ok((await act(pa, 'checkOut', fb.data.result.id)).status === 200 && (await act(pa, 'returnAircraft', fb.data.result.id, { note: '', fuelToppedOff: true })).status === 200, 'A checks out and returns');
+const fr = await act(pa, 'submitFlight', { bookingId: fb.data.result.id, pilotId: A, flightDate: new Date().toISOString().slice(0, 10), route: 'KBFL secret', hobbsStart: 500000, hobbsEnd: 500150, tachStart: 400000, tachEnd: 400120, fuelGallons: 1200, fuelCostCents: 7200, notes: 'private note', submissionKey: 'priv' + Date.now() });
+ok(fr.status === 200, 'A records the flight');
+const fid = fr.data.result.record.id;
+const sB = (await req(pb, '/api/state')).data.state;
+ok(!sB.flights.some((f) => f.id === fid || f.pilotId === A), 'pilot B does not receive A\'s flight record');
+ok(!JSON.stringify(sB).includes('KBFL secret') && !JSON.stringify(sB).includes('private note'), 'nothing from A\'s record anywhere in B\'s data (incl. activity)');
+const stub = sB.flights.find((f) => f.meterOnly);
+ok(stub && stub.hobbsEnd === 500150 && stub.tachEnd === 400120 && stub.pilotId === '', 'B gets only the latest Hobbs/tach, unattributed');
+ok(sB.audit.every((a) => a.before === undefined && a.after === undefined), 'activity details stripped for pilots');
+const sA = (await req(pa, '/api/state')).data.state;
+ok(sA.flights.some((f) => f.id === fid && f.route === 'KBFL secret'), 'pilot A still sees his own record');
+ok((await req(admin, '/api/state')).data.state.flights.some((f) => f.id === fid), 'admin sees every record');
+ok((await req(pb, '/api/track?flight=' + fid)).status === 404, 'B cannot load A\'s flight path');
+
 console.log('Codes and revocation');
 const nc = await req(admin, '/api/admin/code', { memberId: B });
 ok(nc.status === 200 && nc.data.code.length === 8, 'admin makes a sign-in code (shown once)');

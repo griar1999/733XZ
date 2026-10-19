@@ -21,7 +21,7 @@ export interface Statement { month: string; rows: StatementRow[]; totals: Omit<S
 
 /** month = "YYYY-MM" in the aircraft time zone (flight dates are already local dates). */
 export function monthlyStatement(db: DbState, month: string): Statement {
-  const inMonth = db.flights.filter((f) => !f.voided && f.flightDate.slice(0, 7) === month);
+  const inMonth = db.flights.filter((f) => !f.voided && !f.meterOnly && f.flightDate.slice(0, 7) === month);
   const ids = [...new Set(inMonth.map((f) => f.pilotId))];
   const rows: StatementRow[] = ids.map((id) => {
     const recs = inMonth.filter((f) => f.pilotId === id).sort((a, b) => a.flightDate.localeCompare(b.flightDate) || a.createdAt.localeCompare(b.createdAt));
@@ -49,7 +49,7 @@ export function monthlyStatement(db: DbState, month: string): Statement {
 
 /** Months that have flight records, newest first, plus the current month. */
 export function statementMonths(db: DbState, currentMonth: string): string[] {
-  const set = new Set(db.flights.filter((f) => !f.voided).map((f) => f.flightDate.slice(0, 7)));
+  const set = new Set(db.flights.filter((f) => !f.voided && !f.meterOnly).map((f) => f.flightDate.slice(0, 7)));
   set.add(currentMonth);
   return [...set].sort().reverse();
 }

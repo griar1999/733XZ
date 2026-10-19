@@ -125,6 +125,8 @@ export interface FlightRecord {
   createdBy: string;
   revisions: Revision[];
   voided?: boolean;
+  /** Pilot view only: stands in for other pilots' flights so the latest Hobbs/tach are known. Not a real record. */
+  meterOnly?: boolean;
 }
 
 export interface AircraftSettings {

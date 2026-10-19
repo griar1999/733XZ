@@ -65,7 +65,7 @@ export function Home() {
   const reviewBookings = me.role === 'admin' ? db.bookings.filter((b) => b.status === 'confirmed' && db.maintenance.some((m) => m.status === 'scheduled' && overlaps(b.startUtc, b.endUtc, m.startUtc, m.endUtc, 0))) : [];
   const last = lastReadings(db.flights);
   const since = Date.parse(addDays(toLocalParts(now, tz).date, -30));
-  const recent = db.flights.filter((f) => Date.parse(f.flightDate) >= since);
+  const recent = db.flights.filter((f) => !f.meterOnly && Date.parse(f.flightDate) >= since);
 
   // Check out / return action for the signed-in member
   const myOut = db.bookings.find((b) => b.status === 'checked_out' && b.pilotId === me.id);
@@ -168,8 +168,8 @@ export function Home() {
         {(last.hobbs !== null || last.tach !== null) && (
           <Section title="Meters">
             <div className="meters">
-              {db.settings.hobbsEnabled && <div className="meter-tile"><p className="eyebrow">Hobbs</p><p className="reading">{fmtHundredths(last.hobbs)}</p><p className="fine">+{fmtHundredths(sumMeter(recent, 'hobbs'))} last 30 days</p></div>}
-              {db.settings.tachEnabled && <div className="meter-tile"><p className="eyebrow">Tach</p><p className="reading">{fmtHundredths(last.tach)}</p><p className="fine">+{fmtHundredths(sumMeter(recent, 'tach'))} last 30 days</p></div>}
+              {db.settings.hobbsEnabled && <div className="meter-tile"><p className="eyebrow">Hobbs</p><p className="reading">{fmtHundredths(last.hobbs)}</p>{me.role === 'admin' && <p className="fine">+{fmtHundredths(sumMeter(recent, 'hobbs'))} last 30 days</p>}</div>}
+              {db.settings.tachEnabled && <div className="meter-tile"><p className="eyebrow">Tach</p><p className="reading">{fmtHundredths(last.tach)}</p>{me.role === 'admin' && <p className="fine">+{fmtHundredths(sumMeter(recent, 'tach'))} last 30 days</p>}</div>}
             </div>
           </Section>
         )}
@@ -219,7 +219,7 @@ export function FlightLog() {
   const s = db.settings;
   const rows = useMemo(() => db.flights.filter((f) => !f.voided && (isAdmin ? (pilot === 'all' || f.pilotId === pilot) : f.pilotId === me.id)
     && (!from || f.flightDate >= from) && (!to || f.flightDate <= to)).sort((a, b) => b.flightDate.localeCompare(a.flightDate) || b.createdAt.localeCompare(a.createdAt)), [db.flights, pilot, from, to, me, isAdmin]);
-  const allActive = db.flights.filter((f) => !f.voided);
+  const allActive = db.flights.filter((f) => !f.voided && !f.meterOnly);
   const ch = charges(rows, s);
   const perPilot = isAdmin ? db.members.map((m) => ({ m, rows: rows.filter((f) => f.pilotId === m.id) })).filter((x) => x.rows.length) : [];
 

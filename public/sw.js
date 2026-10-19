@@ -1,7 +1,7 @@
 // Network-first service worker: always try the latest version, fall back to the cached copy offline.
 // Schedule data and sign-in (/api/) always go straight to the server and are never cached here;
 // the app keeps its own clearly-labeled read-only copy for offline viewing.
-const CACHE = 'planeshare-v15';
+const CACHE = 'planeshare-v16';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest', '/icon-192.png'])).then(() => self.skipWaiting()));
 });

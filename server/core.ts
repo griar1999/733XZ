@@ -262,7 +262,23 @@ export async function readJson<T>(request: Request): Promise<T> {
 /** Members see everyone's names; only admins see emails. */
 export function visibleState(state: DbState, s: SessionInfo): DbState {
   if (s.role === 'admin') return state;
-  return { ...state, members: state.members.map((m) => ({ ...m, email: m.id === s.memberId ? m.email : '' })) };
+  // Pilots get their own flight records only. Other pilots' flights (hours, fuel, charges) never leave the server;
+  // one stand-in record carries the aircraft's latest Hobbs/tach so starting readings and inspections still work.
+  const mine = state.flights.filter((f) => f.pilotId === s.memberId);
+  const others = state.flights.filter((f) => f.pilotId !== s.memberId && !f.voided);
+  const flights = [...mine];
+  if (others.length) {
+    const max = (k: 'hobbsEnd' | 'tachEnd') => others.reduce<number | null>((m, f) => (f[k] !== null && (m === null || f[k]! > m) ? f[k] : m), null);
+    const h = max('hobbsEnd'), t = max('tachEnd');
+    const date = others.reduce((d, f) => (f.flightDate > d ? f.flightDate : d), '');
+    flights.push({ id: '_meters', bookingId: '', pilotId: '', flightDate: date, route: '', hobbsStart: h, hobbsEnd: h, tachStart: t, tachEnd: t,
+      fuelGallons: null, fuelCostCents: null, notes: '', flags: [], submissionKey: '', createdAt: date, createdBy: '', revisions: [], meterOnly: true });
+  }
+  const myFlightIds = new Set(mine.map((f) => f.id));
+  const audit = state.audit
+    .filter((a) => a.entityType !== 'flight' || a.actorId === s.memberId || (a.entityId !== undefined && myFlightIds.has(a.entityId)))
+    .map(({ before: _b, after: _a, ...rest }) => rest);
+  return { ...state, flights, audit, members: state.members.map((m) => ({ ...m, email: m.id === s.memberId ? m.email : '' })) };
 }
 
 // ---------- photos ----------

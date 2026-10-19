@@ -121,11 +121,12 @@ export async function fetchTrack(env: TrackEnv, state: DbState, f: FlightRecord,
 async function row(db: D1DB, id: string) { return db.prepare('SELECT * FROM tracks WHERE flight_id = ?').bind(id).first<Row>(); }
 
 /** The saved path for a flight; tries OpenSky if there's nothing yet and it's time for another try. */
-export async function getTrack(env: TrackEnv, flightId: string, opts: { force?: boolean } = {}): Promise<TrackInfo | null> {
+export async function getTrack(env: TrackEnv, flightId: string, opts: { force?: boolean; viewer?: { memberId: string; role: string } } = {}): Promise<TrackInfo | null> {
   await ensureTable(env.DB!);
   const { state } = await loadApp(env);
   const f = state.flights.find((x) => x.id === flightId);
   if (!f) return null;
+  if (opts.viewer && opts.viewer.role !== 'admin' && f.pilotId !== opts.viewer.memberId) return null; // pilots see their own flights only
   const r = await row(env.DB!, flightId);
   if (r && r.status === 'ok' && !opts.force) return toInfo(r);
   if (r && !opts.force && (r.status !== 'pending' || Date.now() - Date.parse(r.last_try) < RETRY_MIN * 60e3)) return toInfo(r);
